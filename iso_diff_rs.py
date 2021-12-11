@@ -74,7 +74,7 @@ def iso_diff_rs(o, n):
             except (IndexError, TypeError):
                 pass
         else:
-            result.append(('create', i))
+            result.append(('create', i, j))
             offset += 1
 
     return result
@@ -86,13 +86,16 @@ b = ['F1', 'F4', 'F6', 'F2', 'F3', 'F8']
 # a = ['F1', 'F2', 'F3']
 # b = ['F1', 'F3', 'F2']
 
-a = ["MUCH", "WRITING", "IS", "LIKE", "SNOW", ",",
-     "A", "MASS", "OF", "LONG", "WORDS", "AND",
-     "PHRASES", "FALLS", "UPON", "THE", "RELEVANT",
-     "FACTS", "COVERING", "UP", "THE", "DETAILS", "."]
-b = ["A", "MASS", "OF", "LATIN", "WORDS", "FALLS",
-     "UPON", "THE", "RELEVANT", "FACTS", "LIKE", "SOFT",
-     "SNOW", ",", "COVERING", "UP", "THE", "DETAILS", "."]
+# old
+# a = ["MUCH", "WRITING", "IS", "LIKE", "SNOW", ",",
+#      "A", "MASS", "OF", "LONG", "WORDS", "AND",
+#      "PHRASES", "FALLS", "UPON", "THE", "RELEVANT",
+#      "FACTS", "COVERING", "UP", "THE", "DETAILS", "."]
+#
+# # new
+# b = ["A", "MASS", "OF", "LATIN", "WORDS", "FALLS",
+#      "UPON", "THE", "RELEVANT", "FACTS", "LIKE", "SOFT",
+#      "SNOW", ",", "COVERING", "UP", "THE", "DETAILS", "."]
 
 # et answer = vec![Delete(0), Delete(1), Delete(2), Delete(9),
 #                   Delete(11), Delete(12), Move(6, 0), Move(7, 1),
