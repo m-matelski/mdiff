@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 
 def many(a: int):
@@ -7,6 +8,7 @@ def many(a: int):
 
 @dataclass
 class SymbolTableEntry:
+    value: Any
     oc: int = 0
     nc: int = 0
     olno: int = 0
@@ -20,12 +22,12 @@ def iso_diff(o, n):
     oa = list()
 
     for idx, i in enumerate(n):
-        ste = st.setdefault(i, SymbolTableEntry())
+        ste = st.setdefault(i, SymbolTableEntry(i))
         ste.nc += 1
         na.append(ste)
 
     for idx, i in enumerate(o):
-        ste = st.setdefault(i, SymbolTableEntry())
+        ste = st.setdefault(i, SymbolTableEntry(i))
         ste.oc += 1
         oa.append(ste)
         ste.olno = idx
@@ -82,6 +84,15 @@ a = ["MUCH", "WRITING", "IS", "LIKE", "SNOW", ",",
      "FACTS", "COVERING", "UP", "THE", "DETAILS", "."]
 b = ["A", "MASS", "OF", "LATIN", "WORDS", "FALLS",
      "UPON", "THE", "RELEVANT", "FACTS", "LIKE", "SOFT",
+     "SNOW", ",", "COVERING", "UP", "THE", "DETAILS", "."]
+
+
+# no missing
+a = ["LIKE", "SNOW", ",",
+     "A", "MASS", "OF", "WORDS", "FALLS", "UPON", "THE", "RELEVANT",
+     "FACTS", "COVERING", "UP", "THE", "DETAILS", "."]
+b = ["A", "MASS", "OF", "WORDS", "FALLS",
+     "UPON", "THE", "RELEVANT", "FACTS", "LIKE",
      "SNOW", ",", "COVERING", "UP", "THE", "DETAILS", "."]
 
 # et answer = vec![Delete(0), Delete(1), Delete(2), Delete(9),
