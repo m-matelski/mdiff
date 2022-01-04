@@ -1,0 +1,2 @@
+# mdiff
+Compare sequences.

@@ -13,10 +13,14 @@ def move_list_elements(l: list, src_i: Union[int, slice], tgt_i: int):
 
     del l[src_i]
     if tgt_i > src_i.start:
-        tgt_i -= len(seq)
+        # tgt_i -= len(seq)
+        pass
 
     l[tgt_i:tgt_i] = seq
 
 
-l = list(range(10))
-move_list_elements(l, slice(7, 10), 0)
+# l = list(range(10))
+# move_list_elements(l,2,5)
+# # move_list_elements(l, slice(7, 10), 0)
+# # move_list_elements(l, slice(1, 4), 5)
+# xx = 1

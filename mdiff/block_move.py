@@ -4,6 +4,8 @@ from typing import List, Tuple
 Block = namedtuple('Block', 'n w')
 
 
+
+
 def any_move_set_brut_force(blocks: List[Block], blocks_used: Tuple[bool], fav: str = 'blocks_weight'):
     available_blocks = [b for i, b in enumerate(blocks) if not blocks_used[i]]
 
@@ -121,20 +123,20 @@ def find_block_moves_dynamic(blocks: List[Block], fav: str = 'blocks_weight'):
                 new_blocks_used[i] = True
 
 
-blocks1 = [Block(2, 3), Block(1, 2), Block(0, 4)]
-blocks2 = [Block(0, 2), Block(1, 1), Block(2, 0)]
-blocks3 = [Block(2, 2), Block(1, 4), Block(4, 2), Block(0, 5), Block(3, 3)]
-blocks4 = [Block(0, 7), Block(2, 2), Block(3, 2), Block(4, 2), Block(1, 7)]
-
-r1 = any_move_set_brut_force(blocks1, tuple([False] * len(blocks1)))
-r2 = any_move_set_brut_force(blocks2, tuple([False] * len(blocks2)))
-r3 = any_move_set_brut_force(blocks3, tuple([False] * len(blocks3)))
-
+# blocks1 = [Block(2, 3), Block(1, 2), Block(0, 4)]
+# blocks2 = [Block(0, 2), Block(1, 1), Block(2, 0)]
+# blocks3 = [Block(2, 2), Block(1, 4), Block(4, 2), Block(0, 5), Block(3, 3)]
+# blocks4 = [Block(0, 7), Block(2, 2), Block(3, 2), Block(4, 2), Block(1, 7)]
 #
-rn1 = find_block_moves(blocks1)
-rn2 = find_block_moves(blocks2)
-rn3 = find_block_moves(blocks3)
-rn4_w = find_block_moves(blocks4, fav='blocks_weight')
-rn4_n = find_block_moves(blocks4, fav='blocks_number')
-
-xxx = 1
+# r1 = any_move_set_brut_force(blocks1, tuple([False] * len(blocks1)))
+# r2 = any_move_set_brut_force(blocks2, tuple([False] * len(blocks2)))
+# r3 = any_move_set_brut_force(blocks3, tuple([False] * len(blocks3)))
+#
+# #
+# rn1 = find_block_moves(blocks1)
+# rn2 = find_block_moves(blocks2)
+# rn3 = find_block_moves(blocks3)
+# rn4_w = find_block_moves(blocks4, fav='blocks_weight')
+# rn4_n = find_block_moves(blocks4, fav='blocks_number')
+#
+# xxx = 1
