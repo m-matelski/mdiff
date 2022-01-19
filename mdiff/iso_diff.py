@@ -1,11 +1,9 @@
-from collections import namedtuple
-from dataclasses import dataclass, field
-from itertools import chain
-from operator import attrgetter
-from typing import Any, List, Tuple, Union, Dict, Sequence
+from dataclasses import dataclass
+from typing import Any, List, Union, Dict, Sequence, NamedTuple
 
-from mdiff.block_move import Block, find_block_moves
-from mdiff.list_operations import move_list_elements
+
+from mdiff.block_extractor import HeckelSequenceNonUniqueEntriesBlockExtractor, ConsecutiveVectorBlockExtractor
+from mdiff.utils import OpCode, longest_increasing_subsequence
 
 
 @dataclass
@@ -22,17 +20,7 @@ class SymbolTableEntry:
 SymbolTableEntryType = Union[int, SymbolTableEntry]
 
 
-@dataclass
-class OpCode:
-    tag: str
-    i1: int
-    i2: int
-    j1: int
-    j2: int
-
-
-@dataclass
-class MoveBlock:
+class MoveBlock(NamedTuple):
     """
     Stores information about detected subsequence to move in diff algorithm.
         i: start position of move subsequence in OA table.
@@ -40,11 +28,11 @@ class MoveBlock:
         w: length of subsequence (weight).
     """
     i: int
-    n: int
+    n: SymbolTableEntryType
     w: int
 
 
-class HeckelDiff:
+class HeckelSequenceMatcher:
     def __init__(self, a, b):
         self.a = a
         self.b = b
@@ -88,11 +76,11 @@ class HeckelDiff:
                 pass
 
         # pass5
-        for i in reversed(range(len(na))):
+        for i in reversed(range(1, len(na))):
             try:
                 if isinstance(na[i], int):
                     j = na[i]
-                    if isinstance(na[i - 1], SymbolTableEntry) and na[i - 1] == oa[j - 1]:
+                    if isinstance(na[i - 1], SymbolTableEntry) and na[i - 1] == oa[j - 1] and i >= 1 and j >= 1:
                         oa[j - 1] = i - 1
                         na[i - 1] = j - 1
             except IndexError:
@@ -101,107 +89,61 @@ class HeckelDiff:
         # pass 5.5
         for idx, i in enumerate(na):
             if isinstance(i, SymbolTableEntry):
+                # mark deletes source indexes
                 i.olno = idx
 
         self.st = st
         self.na = na
         self.oa = oa
 
-    @staticmethod
-    def is_valid_symbol_table_move_entry(e: SymbolTableEntryType) -> bool:
-        """Checks if algorithm's symbol table record is a move operation"""
-        return isinstance(e, int) and e >= 0
-
-    @staticmethod
-    def is_valid_symbol_table_unique_entry(e: SymbolTableEntryType) -> bool:
-        return isinstance(e, SymbolTableEntry)
-
-    @staticmethod
-    def _generate_move_blocks(a: List[SymbolTableEntryType]) -> Sequence[MoveBlock]:
-        """
-        Generates move blocks data from algorithm result.
-        Returns Tuples of (move block start index, move block first element value (int), length of move block)
-        Data in that format will be used to find least moves needed to create target sequence.
-        """
-        prev = None
-        block_start_n = block_start_idx = block_len = 0
-        in_block = False
-        for idx, i in enumerate(a):
-            # close block
-            if in_block and (not HeckelDiff.is_valid_symbol_table_move_entry(i) or (
-                    HeckelDiff.is_valid_symbol_table_move_entry(prev) and i != prev + 1) or i == -1):
-                yield MoveBlock(i=block_start_idx, n=block_start_n, w=block_len)
-                in_block = False
-            # open block
-            if not in_block and HeckelDiff.is_valid_symbol_table_move_entry(i):
-                block_start_n = i
-                block_start_idx = idx
-                block_len = 0
-                in_block = True
-            prev = i
-            block_len += 1
-        # last block
-        if in_block:
-            yield MoveBlock(i=block_start_idx, n=block_start_n, w=block_len)
-
-    @staticmethod
-    def _generate_insert_delete_block(a: List[SymbolTableEntryType]) -> Sequence[MoveBlock]:
-        prev = None
-        block_start_n = block_start_idx = block_len = 0
-        in_block = False
-        for idx, i in enumerate(a):
-            # close block
-            if not HeckelDiff.is_valid_symbol_table_unique_entry(i) and in_block:
-                yield MoveBlock(i=block_start_idx, n=block_start_n, w=block_len)
-                in_block = False
-            # open block
-            if not in_block and HeckelDiff.is_valid_symbol_table_unique_entry(i):
-                block_start_n = i
-                block_start_idx = idx
-                block_len = 0
-                in_block = True
-            prev = i
-            block_len += 1
-        # last block
-        if in_block:
-            yield MoveBlock(i=block_start_idx, n=block_start_n, w=block_len)
-
-    def generate_move_blocks(self):
-        yield from HeckelDiff._generate_move_blocks(self.na)
-
     def generate_move_and_equal_opcodes(self) -> Sequence[OpCode]:
-        mb = list(self.generate_move_blocks())
-        blocks_p = [Block(mb.n, mb.w) for mb in mb]
-        block_moves = list(find_block_moves(blocks_p))
-        for i, b in enumerate(mb):
-            # move
-            if i in block_moves:
-                yield OpCode('move', b.i, b.i + b.w, b.n, b.n) # Target shoudl be empty slice? or + w
-                yield OpCode('moved', b.i, b.i, b.n, b.n + b.w)
-            else:
-                yield OpCode('equal', b.i, b.i + b.w, b.n, b.n + b.w)  # Target shoudl be empty slice? or + w
+        # New order of sequence elements that exists in both sequences is stored in NA table after algorithm run.
+        # Integer type entries in NA indicates that element of sequence might be either equal or moved.
+        # Extract from NA tables only move/equal entries.
+        # Index is added because NA integer entries will be converted to consecutive entries blocks.
+        # Block will have form of tuple = (block_start_index, block_start_value, block_length) corresponding to NA table
+        # NA table can consist of SymbolTableEntry type rows which breaks the block.
+        # Adding enumerate index allow to detect block break caused by SymbolTableEntry type record.
+        na_indexed_moves = [(idx, i) for idx, i in enumerate(self.na) if isinstance(i, int)]
 
-    def generate_insert_blocks(self):
-        yield from HeckelDiff._generate_insert_delete_block(self.oa)
+        # Longest increasing sequence finds "equal" entries.
+        # Indexed NA in form of tuples are used in order to use index to build proper MoveBlocks later.
+        lis = longest_increasing_subsequence(na_indexed_moves, key=lambda x: x[1])
+        lis_idx, lis_v = zip(*lis) if lis else ([], [])
+
+        # Finding consecutive vector blocks and mapping them to NA indexes and starting values.
+        cons_all_blocks = list(ConsecutiveVectorBlockExtractor(na_indexed_moves).extract_blocks())
+        all_blocks = [MoveBlock(i=na_indexed_moves[i][0], n=na_indexed_moves[i][1], w=w) for i, w in cons_all_blocks]
+
+        # Finding consecutive vector blocks in LIS and mapping them to NA indexes and starting values.
+        cons_eq_blocks = list(ConsecutiveVectorBlockExtractor(lis_v).extract_blocks())
+        eq_blocks = [MoveBlock(i=lis_v[i][0], n=lis_v[i][1], w=w) for i, w in cons_eq_blocks]
+
+        # The difference of all NA blocks and "equal" blocks found by LIS, gives list of optimal move operation blocks.
+        move_blocks = set(all_blocks) - set(eq_blocks)
+
+        # Yield OpCodes
+        for b in eq_blocks:
+            yield OpCode('equal', b.i, b.i + b.w, b.n, b.n + b.w)
+
+        for b in move_blocks:
+            yield OpCode('move', b.i, b.i + b.w, b.n, b.n)
+            yield OpCode('moved', b.i, b.i, b.n, b.n + b.w)
 
     def generate_insert_opcodes(self):
-        bb = list(self.generate_insert_blocks())
-        for b in self.generate_insert_blocks():
+        block_extractor = HeckelSequenceNonUniqueEntriesBlockExtractor(self.oa)
+        insert_blocks = [MoveBlock(i, self.oa[i], w) for i, w in block_extractor.extract_blocks()]
+        for b in insert_blocks:
             yield OpCode('insert', b.n.olno, b.n.olno, b.i, b.i + b.w)
-            # yield OpCode('insert', b.i, b.i, b.i, b.i + b.w)
 
     def generate_delete_opcodes(self):
-        bb = list(self.generate_delete_blocks())
-        for b in self.generate_delete_blocks():
-            # TODO: olno is always 0 for delete? Does it have ny meaning position in target?
+        block_extractor = HeckelSequenceNonUniqueEntriesBlockExtractor(self.na)
+        delete_blocks = [MoveBlock(i, self.na[i], w) for i, w in block_extractor.extract_blocks()]
+        for b in delete_blocks:
             yield OpCode('delete', b.i, b.i + b.w, b.n.olno, b.n.olno)
-
-    def generate_delete_blocks(self):
-        yield from HeckelDiff._generate_insert_delete_block(self.na)
 
     def get_opcodes(self):
         self.alg()
-        opcodes = list(chain(self.generate_move_and_equal_opcodes(), self.generate_insert_opcodes(), self.generate_delete_opcodes()))
 
         insert_opcodes = list(self.generate_insert_opcodes())
         delete_opcodes = list(self.generate_delete_opcodes())
@@ -217,12 +159,13 @@ class HeckelDiff:
             map_dict[opcode.tag].append(opcode)
 
         # opcodes should be already sorted
+        moved_opcodes.sort(key=lambda x: x.j1)
+        move_opcodes.sort(key=lambda x: x.i1)
 
         # sort it
         result = []
         ipos = 0
         jpos = 0
-        finished = False
 
         while True:
             if len(delete_opcodes) > 0 and delete_opcodes[0].i1 == ipos:
@@ -258,49 +201,15 @@ class HeckelDiff:
 
             break
 
+        # TODO Fold delete -> insert into replace
+        # be = HeckelDeleteThenInsertBlockExtractor(result)
+        # b = list(be.extract_blocks())
+        # for i in b:
+        #     delete = result[i[0]]
+        #     insert = result[i[0]+1]
+        #     replace = OpCode('replace', delete.i1, delete.i2, insert.j1, insert.j2)
+        #     result[i[0]: i[0]+2] = [replace]
+        #     x = 1
+
         return result
 
-
-
-
-
-a = ['F3', 'F5', 'F1', 'F2', 'F7']
-b = ['F1', 'F4', 'F6', 'F2', 'F3', 'F8']
-
-# a = ['F1', 'F2', 'F3']
-# b = ['F1', 'F3', 'F2']
-
-a = ["MUCH", "WRITING", "IS", "LIKE", "SNOW", ",",
-     "A", "MASS", "OF", "LONG", "WORDS", "AND",
-     "PHRASES", "FALLS", "UPON", "THE", "RELEVANT",
-     "FACTS", "COVERING", "UP", "THE", "DETAILS", "."]
-b = ["A", "MASS", "OF", "LATIN", "WORDS", "FALLS",
-     "UPON", "THE", "RELEVANT", "FACTS", "LIKE", "SOFT",
-     "SNOW", ",", "COVERING", "UP", "THE", "DETAILS", "."]
-
-# Common only
-# old
-# a = ["LIKE", "SNOW", ",",
-#      "A", "MASS", "OF", "WORDS",
-#      "FALLS", "UPON", "THE", "RELEVANT",
-#      "FACTS", "COVERING", "UP", "THE", "DETAILS", "."]
-#
-# # new
-# b = ["A", "MASS", "OF", "WORDS", "FALLS",
-#      "UPON", "THE", "RELEVANT", "FACTS", "LIKE",
-#      "SNOW", ",", "COVERING", "UP", "THE", "DETAILS", "."]
-
-# et answer = vec![Delete(0), Delete(1), Delete(2), Delete(9),
-#                   Delete(11), Delete(12), Move(6, 0), Move(7, 1),
-#                   Move(8, 2), Create(3), Move(10, 4), Move(13, 5),
-#                   Move(14, 6), Move(15, 7), Move(16, 8), Move(17, 9),
-#                   Move(3, 10), Create(11), Move(4, 12), Move(5, 13)];
-
-
-# hd = HeckelDiff(a, b)
-# hd.alg()
-
-# hd_blocks1 = list(HeckelDiff.generate_move_blocks([1, 2, 3, 's', 7, 8, 's', 5]))
-
-# hd.get_opcodes()
-xxx = 1
