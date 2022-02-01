@@ -1,21 +1,19 @@
 from itertools import zip_longest
-from typing import Sequence, Union, Tuple
+from typing import Sequence
 
-from colorama import Fore, init, Back, Style
+from colorama import Fore, init
 
-from mdiff.utils import OpCode, len_or_1
+from mdiff.utils import len_or_1, OpCodesType
 
 init(autoreset=True)
 
-OpCodes = Union[Sequence[OpCode], Sequence[Tuple[str, int, int, int, int]]]
 
-
-def print_opcodes(a: Sequence, b: Sequence, opcodes: OpCodes):
+def print_opcodes(a: Sequence, b: Sequence, opcodes: OpCodesType):
     for tag, i1, i2, j1, j2 in opcodes:
         print('{:7}   a[{}:{}] --> b[{}:{}] {!r:>8} --> {!r}'.format(tag, i1, i2, j1, j2, a[i1:i2], b[j1:j2]))
 
 
-def simple_seq_comparison(a: Sequence, b: Sequence, opcodes: OpCodes):
+def print_simple_seq_comparison(a: Sequence, b: Sequence, opcodes: OpCodesType):
     a_longest = max([len_or_1(i) for i in a])
     b_longest = max([len_or_1(i) for i in b])
     left_col_len = a_longest + 3
