@@ -1,7 +1,7 @@
 import unittest
 
 from mdiff.block_extractor import ConsecutiveIntegerBlockExtractor, NonIntegersBlockExtractor, \
-    OpCodeDeleteThenInsertBlockExtractor, ConsecutiveVectorBlockExtractor
+    OpCodeDeleteThenInsertBlockExtractor, ConsecutiveVectorBlockExtractor, extraction_inversion
 from mdiff.utils import OpCode
 
 
@@ -90,3 +90,41 @@ class TestDeleteThenInsertBlockExtractor(unittest.TestCase):
         blocks = list(be.extract_blocks())
         expected_blocks = [(0, 2), (3, 2)]
         self.assertEqual(expected_blocks, blocks)
+
+
+class TestBlockInversion(unittest.TestCase):
+    def test_simple_extraction_inversion(self):
+        inv = list(extraction_inversion(10, [(3, 1), (6, 2)]))
+        expected_inv = [(0, 3), (4, 2), (8, 2)]
+        self.assertEqual(expected_inv, inv)
+
+    def test_first_block_extraction_inversion(self):
+        """Test if extraction inversion works correctly when first block starts at the beginning of a sequence."""
+        inv = list(extraction_inversion(10, [(0, 3)]))
+        expected_inv = [(3, 7)]
+        self.assertEqual(expected_inv, inv)
+
+    def test_last_block_extraction_inversion(self):
+        """Test if extraction inversion works correctly when last block spreads to the end of a sequence."""
+        inv = list(extraction_inversion(10, [(3, 1), (8, 2)]))
+        expected_inv = [(0, 3), (4, 4)]
+        self.assertEqual(expected_inv, inv)
+
+    def test_inversion_for_out_of_boundaries_block(self):
+        """Test if extraction inversion won't return blocks out of boundaries of provided seq_base."""
+        inv = list(extraction_inversion(10, [(3, 1), (13, 2), (99, 9)]))
+        expected_inv = [(0, 3), (4, 6)]
+        self.assertEqual(expected_inv, inv)
+
+    def test_inversion_for_covering_block(self):
+        """Test if inversion of one block covering the whole sequence returns empty sequence."""
+        inv = list(extraction_inversion(10, [(0, 10)]))
+        expected_inv = []
+        self.assertEqual(expected_inv, inv)
+
+
+    def test_inversion_for_empty_block_set(self):
+        """Test if inversion of empty blocks set returns covering block."""
+        inv = list(extraction_inversion(10, []))
+        expected_inv = [(0, 10)]
+        self.assertEqual(expected_inv, inv)
