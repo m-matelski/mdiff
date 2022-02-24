@@ -3,7 +3,8 @@ This module provides functions and structures for common package usage.
 """
 
 import math
-from typing import NamedTuple, Any, Tuple, List, Sequence, Union
+from pathlib import Path
+from typing import NamedTuple, Any, Tuple, List, Sequence, Union, Protocol
 
 
 class OpCode:
@@ -46,10 +47,27 @@ OpCodeType = Union[OpCode, Tuple[str, int, int, int, int]]
 OpCodesType = Sequence[OpCodeType]
 
 
+class SequenceMatcherBase(Protocol):
+    def get_opcodes(self) -> List[OpCodeType]:
+        ...
+
+    def set_seqs(self, a, b):
+        ...
+
+    def set_seq1(self, a):
+        ...
+
+    def set_seq2(self, b):
+        ...
+
+
 class CompositeOpCode(OpCode):
     def __init__(self, tag, i1, i2, j1, j2):
         super().__init__(tag, i1, i2, j1, j2)
         self.children_opcodes: List[OpCode] = []
+
+    def __repr__(self):
+        return f"{super().__repr__()}{'*' if self.children_opcodes else ''}"
 
 
 def longest_increasing_subsequence(x: Sequence[Any], key=lambda x: x, a_lt_b=lambda a, b: a < b) \
@@ -194,3 +212,17 @@ def pair_iteration(seq: Sequence, n=2):
     while i < len(seq_l):
         yield tuple(seq_l[i:i + n])
         i += n
+
+
+def get_composite_layer(ob, n, children_getter):
+    if n == 0:
+        yield ob
+    else:
+        for i in children_getter(ob):
+            yield from get_composite_layer(i, n - 1, children_getter)
+
+
+def read_file(p: Path):
+    with open(p) as file:
+        content = file.read()
+    return content

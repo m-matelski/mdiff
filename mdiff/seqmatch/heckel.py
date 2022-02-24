@@ -86,13 +86,23 @@ class HeckelSequenceMatcher:
     http://documents.scribd.com/docs/10ro9oowpo1h81pgh1as.pdf
     """
 
-    def __init__(self, a: Sequence[Any], b: Sequence[Any], replace_mode=True):
+    def __init__(self, a: Sequence[Any] = '', b: Sequence[Any] = '', replace_mode=True):
         self.a = a
         self.b = b
         self.replace_mode = replace_mode
         self.st: Dict[Any, HeckelSymbolTableEntryType] = {}
         self.na: List[HeckelSymbolTableEntryType] = []
         self.oa: List[HeckelSymbolTableEntryType] = []
+
+    def set_seq1(self, a):
+        self.a = a
+
+    def set_seq2(self, b):
+        self.b = b
+
+    def set_seqs(self, a, b):
+        self.set_seq1(a)
+        self.set_seq2(b)
 
     def _alg(self):
         """
@@ -330,7 +340,7 @@ class DisplacementSequenceMatcher(HeckelSequenceMatcher):
             Remains "insert" and "delete" blocks otherwise.
     """
 
-    def __init__(self, a, b, replace_mode=True):
+    def __init__(self, a='', b='', replace_mode=True):
         """
         Overridden init from HeckelSequenceMatcher class.
         """
