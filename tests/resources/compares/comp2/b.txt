@@ -1,0 +1,51 @@
+import abc
+from dataclasses import dataclass
+from itertools import zip_longest
+from typing import Sequence, Dict
+
+import colorama
+
+from mdiff.utils import len_or_1, OpCodesType, CompositeOpCode, OpCodeType
+
+
+
+
+
+
+@dataclass
+class ConsoleCharacters:
+    sep_line_num: str
+    symbol_equal: str
+    symbol_delete: str
+    symbol_insert: str
+    symbol_move: str
+    symbol_move_up: str
+    symbol_move_down: str
+    symbol_replace2: str
+    symbol_similar: str
+    line_fill_char: str
+
+
+
+def longest_string_in_list(s_list: Sequence[str]):
+    return max(s_list, key=lambda x: len(x))
+
+
+console_characters: Dict[str, ConsoleCharacters] = {
+    'ascii': ascii_console_characters,
+    'utf8': unicode_console_characters
+}
+
+
+def digits_number(a: int):
+    return int(log10(a)) + 1
+
+
+def test1():
+    pass
+
+
+class ConsolePrinter(abc.ABC):
+    @abc.abstractmethod
+    def print(self):
+        pass

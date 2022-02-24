@@ -1,0 +1,298 @@
+import abc
+from dataclasses import dataclass
+from itertools import zip_longest
+from math import log10
+from typing import Sequence, Dict
+
+from colorama import Fore, init, Back
+
+from mdiff.utils import len_or_1, OpCodesType, CompositeOpCode, OpCodeType
+
+init(autoreset=True)
+
+
+@dataclass
+class ConsoleCharacters:
+    sep_line_num: str
+    symbol_line_equal: str
+    symbol_line_delete: str
+    symbol_line_insert: str
+    symbol_line_move: str
+    symbol_line_move_up: str
+    symbol_line_move_down: str
+    symbol_line_replace: str
+    symbol_line_similar: str
+    line_fill_char: str
+
+
+@dataclass
+class ConsoleColors:
+    line_delete: str
+    line_insert: str
+    line_move: str
+    line_replace: str
+    line_equal: str
+    line_filler: str
+    in_line_equal: str
+    in_line_delete: str
+    in_line_insert: str
+    in_line_move: str
+    in_line_replace: str
+
+    def __post_init__(self):
+        self.line = {
+            'delete': self.line_delete,
+            'insert': self.line_insert,
+            'move': self.line_move,
+            'replace': self.line_replace,
+            'equal': self.line_equal,
+            'moved': self.line_move
+        }
+
+        self.in_line = {
+            'equal': self.in_line_equal,
+            'delete': self.in_line_delete,
+            'insert': self.in_line_insert,
+            'move': self.in_line_move,
+            'replace': self.in_line_replace,
+            'moved': self.in_line_move
+        }
+
+    def get_line_color(self, tag: str):
+        return self.line[tag]
+
+    def get_in_line_color(self, tag: str):
+        return self.in_line[tag]
+
+
+console_colors = ConsoleColors(
+    line_delete=Fore.RED,
+    line_insert=Fore.GREEN,
+    line_move=Fore.BLUE,
+    line_replace=Fore.YELLOW,
+    line_equal=Fore.RESET + Back.RESET,
+    line_filler=Fore.LIGHTBLACK_EX,
+    in_line_delete=Back.RED,
+    in_line_insert=Back.GREEN,
+    in_line_move=Back.BLUE,
+    in_line_replace=Back.LIGHTCYAN_EX,
+    in_line_equal=''
+)
+
+ascii_console_characters = ConsoleCharacters(
+    sep_line_num='|',
+    symbol_line_equal=' ',
+    symbol_line_delete='-',
+    symbol_line_insert='+',
+    symbol_line_move='M',
+    symbol_line_move_up='^',
+    symbol_line_move_down='v',
+    symbol_line_replace='R',
+    symbol_line_similar='~',
+    line_fill_char='.'
+)
+
+unicode_console_characters = ConsoleCharacters(
+    sep_line_num='│',
+    symbol_line_equal=' ',
+    symbol_line_delete='-',
+    symbol_line_insert='+',
+    symbol_line_move='⇅',
+    symbol_line_move_up='🠕',
+    symbol_line_move_down='🠗',
+    symbol_line_replace='R',
+    symbol_line_similar='≠',
+    line_fill_char='.'
+)
+# ǀ ≠ 🠕 🠗 ⇅
+
+console_characters: Dict[str, ConsoleCharacters] = {
+    'ascii': ascii_console_characters,
+    'utf8': unicode_console_characters
+}
+
+
+def longest_string_in_list(s_list: Sequence[str]):
+    return max(s_list, key=lambda x: len(x))
+
+
+def digits_number(a: int):
+    return int(log10(a)) + 1
+
+
+class ConsolePrinter(abc.ABC):
+    @abc.abstractmethod
+    def print(self):
+        pass
+
+
+class LineDiffConsolePrinter:
+    def __init__(self, a: Sequence[str], b: Sequence[str], seq: Sequence[CompositeOpCode],
+                 characters: ConsoleCharacters, colors: ConsoleColors, line_margin=3, equal_context=-1):
+        self.a = a
+        self.b = b
+        self.seq = seq
+        self.characters = characters
+        self.colors = colors
+        self.line_margin = line_margin
+        self.equal_context = equal_context
+
+        # build formatting
+        self.a_longest_string = len(longest_string_in_list(self.a))
+        self.b_longest_string = len(longest_string_in_list(self.b))
+        self.a_line_digits_number = digits_number(len(self.a))
+        self.b_line_digits_number = digits_number(len(self.b))
+
+        #
+        self.a_line_num_label_format = f'{self.characters.sep_line_num} ' \
+                                       f'{{line_num:>{self.a_line_digits_number}}}{{op_char:>1}}' \
+                                       f'{self.characters.sep_line_num}'
+
+        self.b_line_num_label_format = f'{self.characters.sep_line_num} ' \
+                                       f'{{line_num:>{self.b_line_digits_number}}}{{op_char:>1}}' \
+                                       f'{self.characters.sep_line_num}'
+
+        self.line_label_format = '{sep_line_num} {line_num:>{line_number_max_digits}}{op_char:<1}{sep_line_num}'
+        self.entry_format = '{entry_content:{fill}<{width}}'
+
+    def print_entry(self,
+                    a_line_num: str = '', a_op_char: str = '', a_line_content: str = '',
+                    b_line_num: str = '', b_op_char: str = '', b_line_content: str = '') -> None:
+        a_label = self.line_label_format.format(
+            sep_line_num=self.characters.sep_line_num,
+            line_num=a_line_num,
+            line_number_max_digits=self.a_line_digits_number,
+            op_char=a_op_char
+        )
+        a_entry = self.entry_format.format(
+            entry_content=a_line_content,
+            fill=self.characters.line_fill_char,
+            width=self.a_longest_string + self.line_margin
+        )
+
+        b_label = self.line_label_format.format(
+            sep_line_num=self.characters.sep_line_num,
+            line_num=b_line_num,
+            line_number_max_digits=self.b_line_digits_number,
+            op_char=b_op_char
+        )
+        b_entry = self.entry_format.format(
+            entry_content=b_line_content,
+            fill='',
+            width=self.b_longest_string
+        )
+        content = f'{a_label}{a_entry}{b_label}{b_entry}'
+        print(content)
+
+    def print_opcode(self, opcode: OpCodeType):
+        tag, i1, i2, j1, j2 = opcode
+        if tag == 'equal':
+            for idx, (left, right) in enumerate(zip(self.a[i1:i2], self.b[j1:j2])):
+                self.print_entry(
+                    a_line_num=i1+idx,
+                    a_op_char=self.characters.symbol_line_equal,
+                    a_line_content=left,
+                    b_line_num=j1+idx,
+                    b_op_char=self.characters.symbol_line_equal,
+                    b_line_content=right
+                )
+        if tag == 'insert':
+            for idx, right in enumerate(self.b[j1:j2]):
+                self.print_entry(
+                    a_line_num='',
+                    a_op_char='',
+                    a_line_content='',
+                    b_line_num=j1 + idx,
+                    b_op_char=self.characters.symbol_line_insert,
+                    b_line_content=right
+                )
+        if tag == 'delete':
+            for idx, left in enumerate(self.a[i1:i2]):
+                self.print_entry(
+                    a_line_num=i1+idx,
+                    a_op_char=self.characters.symbol_line_delete,
+                    a_line_content=left,
+                    b_line_num='',
+                    b_op_char='',
+                    b_line_content=''
+                )
+
+        if tag == 'replace':
+            for idx, (left, right) in enumerate(zip_longest(self.a[i1:i2], self.b[j1:j2], fillvalue='')):
+                self.print_entry(
+                    a_line_num=i1 + idx,
+                    a_op_char=self.characters.symbol_line_replace,
+                    a_line_content=left,
+                    b_line_num=j1 + idx,
+                    b_op_char=self.characters.symbol_line_replace,
+                    b_line_content=right
+                )
+
+        if tag == 'move':
+            for idx, left in enumerate(self.a[i1:i2]):
+                self.print_entry(
+                    a_line_num=i1 + idx,
+                    a_op_char=self.characters.symbol_line_move,
+                    a_line_content=left,
+                    b_line_num='',
+                    b_op_char='',
+                    b_line_content=''
+                )
+        if tag == 'moved':
+            for idx, right in enumerate(self.b[j1:j2]):
+                self.print_entry(
+                    a_line_num='',
+                    a_op_char='',
+                    a_line_content='',
+                    b_line_num=j1 + idx,
+                    b_op_char=self.characters.symbol_line_move,
+                    b_line_content=right
+                )
+
+    def print(self):
+        for opcode in self.seq:
+            self.print_opcode(opcode)
+
+
+def print_opcodes(a: Sequence, b: Sequence, opcodes: OpCodesType):
+    for tag, i1, i2, j1, j2 in opcodes:
+        print('{:7}   a[{}:{}] --> b[{}:{}] {!r:>8} --> {!r}'.format(tag, i1, i2, j1, j2, a[i1:i2], b[j1:j2]))
+
+
+def print_simple_seq_comparison(a: Sequence, b: Sequence, opcodes: OpCodesType):
+    a_longest = max([len_or_1(i) for i in a])
+    b_longest = max([len_or_1(i) for i in b])
+    left_col_len = a_longest + 3
+    right_col_len = b_longest + 3
+
+    colormode = Fore
+
+    print_format = f'{{left_op:1}} {{left_f:<{left_col_len}}} || {{right_op:1}} {{right_f:<{right_col_len}}}'
+    for tag, i1, i2, j1, j2 in opcodes:
+        if tag == 'equal':
+            for left, right in zip(a[i1:i2], b[j1:j2]):
+                print(print_format.format(left_op='', left_f=left, right_op='', right_f=right))
+        if tag == 'insert':
+            for right in b[j1:j2]:
+                print(colormode.GREEN + print_format.format(left_op='', left_f='', right_op='+', right_f=right))
+        if tag == 'delete':
+            for left in a[i1:i2]:
+                print(colormode.RED + print_format.format(left_op='-', left_f=left, right_op='', right_f=''))
+        if tag == 'replace':
+            for left, right in zip_longest(a[i1:i2], b[j1:j2], fillvalue=''):
+                print(colormode.YELLOW + print_format.format(left_op='R', left_f=left, right_op='R', right_f=right))
+        if tag == 'move':
+            for left in a[i1:i2]:
+                print(colormode.BLUE + print_format.format(left_op='M', left_f=left, right_op='', right_f=''))
+        if tag == 'moved':
+            for right in b[j1:j2]:
+                print(colormode.BLUE + print_format.format(left_op='', left_f='', right_op='M', right_f=right))
+
+
+def print_diff_lines_with_similarities(a: Sequence, b: Sequence, opcodes: OpCodesType, mode='ascii', margin=3):
+    con_chars = console_characters[mode]
+    a_longest = max([len_or_1(i) for i in a])
+    b_longest = max([len_or_1(i) for i in b])
+    left_col_len = a_longest + margin
+    right_col_len = b_longest + margin
+    line_format = f'{{left_op:1}} {{left_f:<{left_col_len}}} || {{right_op:1}} {{right_f:<{right_col_len}}}'
