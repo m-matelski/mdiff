@@ -22,7 +22,7 @@ class TestLineDiffPrint(unittest.TestCase):
                                                                  line_sm=line_sm, similarities_sm=similarities_sm)
         printer = cli_vis.LineDiffConsolePrinter(a=a_lines, b=b_lines, seq=opcodes,
                                                  characters=cli_vis.unicode_console_characters,
-                                                 colors=cli_vis.console_colors, line_margin=3, equal_context=-1)
+                                                 colors=cli_vis.console_colors_back, line_margin=3, equal_context=-1)
         printer.print()
 
     def test2(self):
@@ -35,7 +35,7 @@ class TestLineDiffPrint(unittest.TestCase):
                                                                  line_sm=line_sm, similarities_sm=similarities_sm)
         printer = cli_vis.LineDiffConsolePrinter(a=a_lines, b=b_lines, seq=list(opcodes),
                                                  characters=cli_vis.unicode_console_characters,
-                                                 colors=cli_vis.console_colors, line_margin=3, equal_context=-1)
+                                                 colors=cli_vis.console_colors_back, line_margin=3, equal_context=-1)
         printer.print()
 
     def test3(self):
@@ -48,5 +48,5 @@ class TestLineDiffPrint(unittest.TestCase):
                                                                  line_sm=line_sm, similarities_sm=similarities_sm)
         printer = cli_vis.LineDiffConsolePrinter(a=a_lines, b=b_lines, seq=list(opcodes),
                                                  characters=cli_vis.unicode_console_characters,
-                                                 colors=cli_vis.console_colors, line_margin=3, equal_context=-1)
+                                                 colors=cli_vis.console_colors_fore, line_margin=3, equal_context=-1)
         printer.print()

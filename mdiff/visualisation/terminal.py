@@ -99,26 +99,26 @@ class ConsoleColors:
         return self.label[tag]
 
 
-console_colors3 = ConsoleColors(
+console_colors_fore = ConsoleColors(
     line_delete=colorama.Fore.RED,
     line_insert=colorama.Fore.GREEN,
     line_move=colorama.Fore.BLUE,
     line_replace=colorama.Fore.YELLOW,
-    line_equal=colorama.Fore.RESET + colorama.Back.RESET,
+    line_equal=colorama.Fore.RESET + colorama.Back.RESET + colorama.Style.RESET_ALL,
     line_filler=colorama.Fore.LIGHTBLACK_EX + colorama.Style.DIM,
-    in_line_delete=colorama.Back.RED,
-    in_line_insert=colorama.Back.GREEN,
-    in_line_move=colorama.Back.BLUE,
-    in_line_replace=colorama.Back.RED,
+    in_line_delete=colorama.Fore.RED,
+    in_line_insert=colorama.Fore.GREEN,
+    in_line_move=colorama.Fore.BLUE,
+    in_line_replace=colorama.Fore.RED,
     in_line_equal='',
-    label_equal=colorama.Fore.RED,
-    label_delete=colorama.Fore.GREEN,
-    label_insert=colorama.Fore.BLUE,
-    label_move=colorama.Fore.LIGHTCYAN_EX,
-    label_replace='',
+    label_equal=colorama.Fore.RESET + colorama.Back.RESET,
+    label_delete=colorama.Fore.RED,
+    label_insert=colorama.Fore.GREEN,
+    label_move=colorama.Fore.BLUE,
+    label_replace=colorama.Fore.YELLOW
 )
 
-console_colors = ConsoleColors(
+console_colors_back = ConsoleColors(
     line_delete=colorama.Back.RED + colorama.Fore.RESET,
     line_insert=colorama.Back.GREEN + colorama.Fore.RESET,
     line_move=colorama.Back.BLUE + colorama.Fore.RESET,
@@ -164,10 +164,19 @@ unicode_console_characters = ConsoleCharacters(
 )
 # ǀ ≠ 🠕 🠗 ⇅
 
+console_colors: Dict[str, ConsoleColors] = {
+    'fore': console_colors_fore,
+    'back': console_colors_back
+}
+
 console_characters: Dict[str, ConsoleCharacters] = {
     'ascii': ascii_console_characters,
     'utf8': unicode_console_characters
 }
+
+
+def get_console_colors(color_mode: str):
+    return console_colors[color_mode]
 
 
 def get_console_characters(char_set: str):
