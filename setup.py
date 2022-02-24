@@ -9,10 +9,11 @@ def readme():
 setuptools.setup(
     name='mdiff',
     packages=setuptools.find_packages(),
-    version='0.0.1',
+    version='0.0.2',
     license='MIT',
     description='Sequence matcher with displacement detection.',
     long_description=readme(),
+    long_description_content_type='text/markdown',
     author='Mateusz Matelski',
     author_email='m.z.matelski@gmail.com',
     url='https://github.com/m-matelski/mdiff',
