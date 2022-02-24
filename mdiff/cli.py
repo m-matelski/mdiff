@@ -26,7 +26,7 @@ def cli_diff(source_file: Path, target_file: Path,
     line_sm = seq_matcher_factory(line_sm_name)()
     similarities_sm = seq_matcher_factory(similarities_sm_name)()
     console_characters = cli_vis.get_console_characters(char_mode)
-    console_colors = cli_vis.console_colors(color_mode)
+    console_colors = cli_vis.get_console_colors(color_mode)
 
     a_lines, b_lines, opcodes = diff_lines_with_similarities(
         a=source, b=target, line_similarity_cutoff=cutoff, line_sm=line_sm, similarities_sm=similarities_sm)
