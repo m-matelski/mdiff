@@ -2,3 +2,5 @@
 __pycache__
 comp_examples
 venv
+build
+dist
