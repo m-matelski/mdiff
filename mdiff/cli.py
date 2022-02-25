@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import Literal
 
@@ -11,15 +12,42 @@ from mdiff.utils import read_file
 sm_valid_names = ('standard', 'heckel', 'displacement')
 
 
-def cli_diff(source_file: Path, target_file: Path,
-             line_sm_name: str = 'heckel',
-             similarities_sm_name: str = 'standard',
-             cutoff: float = 0.75,
-             char_mode: str = 'utf8',
-             color_mode: str = 'fore'
-             ):
+class SequenceMatcherName(str, Enum):
+    STANDARD = 'standard'
+    HECKEL = 'heckel'
+
+
+class CharacterMode(str, Enum):
+    UTF8 = 'utf8'
+    ASCII = 'ascii'
+
+
+class ColorMode(str, Enum):
+    FORE = 'fore'
+    BACK = 'back'
+
+
+def cli_diff(source_file: Path = typer.Argument(..., help="Source file path to compare."),
+             target_file: Path = typer.Argument(..., help="Target file path to compare."),
+             line_sm_name: SequenceMatcherName = typer.Option(
+                 SequenceMatcherName.HECKEL,
+                 help='Choose sequence matching method to detect differences between lines.'),
+             similarities_sm_name: SequenceMatcherName = typer.Option(
+                 SequenceMatcherName.HECKEL,
+                 help='Choose sequence matching method to detect in-line differences between similar lines.'),
+             cutoff: float = typer.Option(
+                 0.75, min=0.0, max=1.0,
+                 help='Line similarity ratio cutoff. If value exceeded then finds in-line differences in similar lines.'
+             ),
+             char_mode: CharacterMode = typer.Option(
+                 CharacterMode.UTF8,
+                 help='Character set used when printing diff result.'),
+             color_mode: ColorMode = typer.Option(
+                 ColorMode.FORE,
+                 help='Color mode used when printing diff result.'
+             )):
     """
-    docs
+    Reads 2 files from provided paths, compares their content and prints diff.
     """
     source = read_file(source_file)
     target = read_file(target_file)
