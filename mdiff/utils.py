@@ -42,6 +42,9 @@ class OpCode:
     def __repr__(self):
         return f'{self.__class__.__name__}{self.__get_tuple_attributes()}'
 
+    def __str__(self):
+        return repr(self)
+
 
 OpCodeType = Union[OpCode, Tuple[str, int, int, int, int]]
 OpCodesType = Sequence[OpCodeType]
