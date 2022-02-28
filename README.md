@@ -18,7 +18,7 @@ pip install mdiff[cli]
 
 ## Usage
 
-### HeckelSequenceMatcher class
+### HeckelSequenceMatcher
 mdiff provides `HeckelSequenceMatcher` class for comparing pairs of sequences of any type, as long as sequences
 are comparable and hashable. Unlike builtin `difflib.SequenceMatcher`, it detects and marks elements
 displacement between sequences. This class provides `get_opcodes()` method which returns Sequence of opcodes
@@ -105,3 +105,59 @@ replace   a_lines[4:5] --> b_lines[4:5]  ['line5'] --> ['line6']
 	equal     a_lines[4][0:4] --> b_lines[4][0:4]     'line' --> 'line'
 	replace   a_lines[4][4:5] --> b_lines[4][4:5]        '5' --> '6'
 ```
+
+## CLI Tool
+
+mdiff also provides CLI tool (available only if installed using `pip install mdiff[cli]`). For more information
+type `mdiff --help`
+
+```console
+Usage: mdiff [OPTIONS] SOURCE_FILE TARGET_FILE
+
+  Reads 2 files from provided paths, compares their content and prints diff.
+  If compared lines in text files are similar enough (exceed cutoff) then
+  extracts in-line diff.
+
+  There are few possible strategies to choose to use independently in line-
+  level and in-line-level diff:
+
+      standard: uses built in python SequenceMatcher object to generate diff,
+      elements movement detection not supported.
+
+      heckel: detects elements movement in a human-readable form, might not
+      catch all of moves and differences.
+
+      displacement: detects all differences and movements, might not be very
+      useful when both input files contains     many common lines (for example
+      many empty newlines).
+
+Arguments:
+  SOURCE_FILE  Source file path to compare.  [required]
+  TARGET_FILE  Target file path to compare.  [required]
+
+Options:
+  --line-sm [standard|heckel|displacement]
+                                  Choose sequence matching method to detect
+                                  differences between lines.  [default:
+                                  heckel]
+  --inline-sm [standard|heckel|displacement]
+                                  Choose sequence matching method to detect
+                                  in-line differences between similar lines.
+                                  [default: heckel]
+  --cutoff FLOAT RANGE            Line similarity ratio cutoff. If value
+                                  exceeded then finds in-line differences in
+                                  similar lines.  [default: 0.75; 0.0<=x<=1.0]
+  --char-mode [utf8|ascii]        Character set used when printing diff
+                                  result.  [default: utf8]
+  --color-mode [fore|back]        Color mode used when printing diff result.
+                                  [default: fore]
+  --install-completion [bash|zsh|fish|powershell|pwsh]
+                                  Install completion for the specified shell.
+  --show-completion [bash|zsh|fish|powershell|pwsh]
+                                  Show completion for the specified shell, to
+                                  copy it or customize the installation.
+  --help                          Show this message and exit.
+```
+### Example
+Sample output for `mdiff a.txt b.txt` command:
+![mdiff example 1](resources/readme/mdiff_cli1.PNG)
