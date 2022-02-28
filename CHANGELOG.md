@@ -1,3 +1,6 @@
+### 0.0.4
+* Fixing version number.
+
 ### 0.0.3
 * Updated `README.md`.
 * Fixed bug where sometimes equal lines where displayed as replaced.
