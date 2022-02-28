@@ -1,57 +1,18 @@
 import unittest
+from difflib import SequenceMatcher
+from pathlib import Path
 
-from mdiff.text_diff import split_paragraphs, split_all_levels
-
-# TODO: finish tests
-
-class TestSplitParagraphs(unittest.TestCase):
-
-    def test1(self):
-        text = "word1 word2\n"\
-               "word3 word4\n"\
-               "\n"\
-               "abc\n"\
-               "\r\n"\
-               "xyz\n"\
-               "\n"\
-               "\n"
-
-        paragraphs = split_paragraphs(text, keepends=True)
-        x = 1
+from mdiff import diff_lines_with_similarities, HeckelSequenceMatcher
+from mdiff.seqmatch.heckel import DisplacementSequenceMatcher
+from mdiff.utils import read_file
 
 
 class TestTextDiff(unittest.TestCase):
 
     def test1(self):
-        a = "word1 word2\n" \
-            "word3 word4\n" \
-            "\n" \
-            "word2_1 word2_2\n" \
-            "word2_3 word2_4\n" \
-            "word2_5 word2_6\n" \
-            "\r\n" \
-            "word3_1 word3_2\n" \
-            "word3_3 word3_4\n" \
-            "word3_5 word3_6\n" \
-            "\n" \
-            "word4_1 word4_2\n" \
-            "\n" \
-            "\n"
-
-        b = "word1 word2\n" \
-            "word3 word4x\n" \
-            "\n" \
-            "\r\n" \
-            "word3_1 word3_2\n" \
-            "word3_3 word3_4\n" \
-            "word3_5 word3_6\n" \
-            "\n" \
-            "\n" \
-            "word2_1 word2_2\n" \
-            "word2_3 word2_4\n" \
-            "word2_5 word2_6\n" \
-            "\n" \
-            "\n"
-
-        res = split_all_levels(a, b)
+        a = read_file(Path('tests/resources/compares/comp3/a.txt'))
+        b = read_file(Path('tests/resources/compares/comp3/b.txt'))
+        a_lines, b_lines, opcodes = diff_lines_with_similarities(a, b)
+        sm = SequenceMatcher(a=a_lines, b=b_lines)
+        hopcodes = sm.get_opcodes()
         x = 1
