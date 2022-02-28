@@ -1,6 +1,5 @@
 from enum import Enum
 from pathlib import Path
-from typing import Literal
 
 import typer
 
@@ -51,10 +50,10 @@ def cli_diff(source_file: Path = typer.Argument(..., help="Source file path to c
     """
     source = read_file(source_file)
     target = read_file(target_file)
-    line_sm = seq_matcher_factory(line_sm_name)()
-    similarities_sm = seq_matcher_factory(similarities_sm_name)()
-    console_characters = cli_vis.get_console_characters(char_mode)
-    console_colors = cli_vis.get_console_colors(color_mode)
+    line_sm = seq_matcher_factory(line_sm_name.value)()
+    similarities_sm = seq_matcher_factory(similarities_sm_name.value)()
+    console_characters = cli_vis.get_console_characters(char_mode.value)
+    console_colors = cli_vis.get_console_colors(color_mode.value)
 
     a_lines, b_lines, opcodes = diff_lines_with_similarities(
         a=source, b=target, line_similarity_cutoff=cutoff, line_sm=line_sm, similarities_sm=similarities_sm)
