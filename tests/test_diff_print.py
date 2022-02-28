@@ -8,14 +8,10 @@ import mdiff.visualisation.terminal as cli_vis
 from mdiff.utils import read_file
 
 
-
-
-
 class TestLineDiffPrint(unittest.TestCase):
     def test1(self):
         a = 'w11111\nw22222\nw33333\nw44444\nw55555\nw66666'
         b = 'w22229\nw22228\nw44444\nw55555\nw66666'
-        line_sm = DisplacementSequenceMatcher()
         line_sm = HeckelSequenceMatcher()
         similarities_sm = SequenceMatcher()
         a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, line_similarity_cutoff=0.75,
@@ -26,9 +22,8 @@ class TestLineDiffPrint(unittest.TestCase):
         printer.print()
 
     def test2(self):
-        a = read_file(Path('resources/compares/comp1/a.txt').absolute())
-        b = read_file(Path('resources/compares/comp1/b.txt').absolute())
-        # line_sm = DisplacementSequenceMatcher()
+        a = read_file(Path('tests/resources/compares/comp1/a.txt').absolute())
+        b = read_file(Path('tests/resources/compares/comp1/b.txt').absolute())
         line_sm = HeckelSequenceMatcher(replace_mode=True)
         similarities_sm = SequenceMatcher()
         a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, line_similarity_cutoff=0.75,
@@ -41,7 +36,6 @@ class TestLineDiffPrint(unittest.TestCase):
     def test3(self):
         a = read_file(Path('tests/resources/compares/comp2/a.txt').absolute())
         b = read_file(Path('tests/resources/compares/comp2/b.txt').absolute())
-        # line_sm = DisplacementSequenceMatcher()
         line_sm = HeckelSequenceMatcher()
         similarities_sm = SequenceMatcher()
         a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, line_similarity_cutoff=0.75,
