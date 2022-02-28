@@ -73,7 +73,7 @@ def extract_replace_similarities(tag: str, i1: int, i2: int, j1: int, j2: int, a
         yield CompositeOpCode('equal', i1, i2, j1, j2)
     elif match_ratio > cutoff:
         # left
-        yield from extract_replace_similarities(tag, i1, match_i, j1, match_j, a, b, cutoff)
+        yield from extract_replace_similarities(tag, i1, match_i, j1, match_j, a, b, cutoff, sm)
 
         # replace middle
         sm.set_seqs(a=a[match_i], b=b[match_j])
@@ -83,7 +83,7 @@ def extract_replace_similarities(tag: str, i1: int, i2: int, j1: int, j2: int, a
         yield opcode
 
         # right
-        yield from extract_replace_similarities(tag, match_i + 1, i2, match_j + 1, j2, a, b, cutoff)
+        yield from extract_replace_similarities(tag, match_i + 1, i2, match_j + 1, j2, a, b, cutoff, sm)
     else:
         if not (i1 == i2 and j1 == j2):
             if i1 == i2:
