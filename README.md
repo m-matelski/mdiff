@@ -33,7 +33,7 @@ human-readable sequence comparisons.
 
 
 
-####Example:
+#### Example:
 ```python
 >>> from mdiff import HeckelSequenceMatcher
 
