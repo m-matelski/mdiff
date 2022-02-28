@@ -11,7 +11,6 @@ class SequenceMatcherName:
     DISPLACEMENT = 'displacement'
 
 
-t1 = Literal['a', 'b']
 seq_matchers = {
     SequenceMatcherName.STANDARD: SequenceMatcher,
     SequenceMatcherName.HECKEL: HeckelSequenceMatcher,
