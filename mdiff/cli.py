@@ -78,7 +78,7 @@ def cli_diff(source_file: Path = typer.Argument(..., help="Source file path to c
     console_colors = cli_vis.get_console_colors(color_mode.value)
 
     a_lines, b_lines, opcodes = diff_lines_with_similarities(
-        a=source, b=target, line_similarity_cutoff=cutoff, line_sm=line_sm_instance, similarities_sm=inline_sm_instance)
+        a=source, b=target, cutoff=cutoff, line_sm=line_sm_instance, inline_sm=inline_sm_instance)
 
     printer = cli_vis.LineDiffConsolePrinter(a=a_lines, b=b_lines, seq=opcodes,
                                              characters=console_characters,

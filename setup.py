@@ -9,7 +9,7 @@ def readme():
 setuptools.setup(
     name='mdiff',
     packages=setuptools.find_packages(),
-    version='0.0.4',
+    version='0.0.5',
     license='MIT',
     description='Sequence matcher with displacement detection.',
     long_description=readme(),
@@ -31,6 +31,7 @@ setuptools.setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX :: Linux',

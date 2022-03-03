@@ -1,11 +1,11 @@
 # mdiff
-mdiff is a package for finding difference between two input sequences which is able to detect sequence elements displacements.
+mdiff is a package for finding difference between two input sequences with ability to detect sequence elements displacements.
 The features are:
-* New SequenceMatcher class compatible with built-in `difflib.SequenceMatcher` class.
-* CLI for using package as a simple tool for comparing files.
+* New SequenceMatcher class compatible with python built-in `difflib.SequenceMatcher` class.
+* CLI for using package as a tool for comparing files.
 
 ## Installation
-For plain SequenceMatcher classes and API (no additional dependencies):
+For plain python package (no additional dependencies):
 ```console
 pip install mdiff
 ```
@@ -18,39 +18,67 @@ pip install mdiff[cli]
 
 ## Usage
 
-### HeckelSequenceMatcher
-mdiff provides `HeckelSequenceMatcher` class for comparing pairs of sequences of any type, as long as sequences
+
+
+### Sequence Matching
+
+`HeckelSequenceMatcher` is a class for comparing pairs of sequences of any type, as long as sequences
 are comparable and hashable. Unlike builtin `difflib.SequenceMatcher`, it detects and marks elements
 displacement between sequences. This class provides `get_opcodes()` method which returns Sequence of opcodes
-with differences between sequences in a similar manner as `difflib.SequenceMatcher.get_opcodes()` does, but
-with additional `"move"` and `"moved"` tags for displaced elements. 
-Unlike `difflib.SequenceMatcher` - this class doesn't provide any additional functionality for generating
-human-readable sequence comparisons.
+with differences between sequences, similar as `difflib.SequenceMatcher.get_opcodes()` does, but
+with additional `move` and `moved` tags for displaced elements.
 
 `HeckelSequenceMatcher` implements Paul Heckel's algorithm described in
 "A Technique for Isolating Differences Between Files" paper, which can be found
 [here](http://documents.scribd.com/docs/10ro9oowpo1h81pgh1as.pdf).
 
+### `HeckelSequenceMatcher(a: Sequence[Any] = '', b: Sequence[Any] = '', replace_mode=True)`
+Initialize sequence matcher object, parameters:
+* `a` - source(old) sequence.
+* `b` - target(new) sequence.
+* `replace_mode` - if True: it merges consecutive pairs of `insert` and `delete` blocks into `replace` operation. Remains `insert` and `delete` opcodes otherwise.
 
+### `get_opcodes() -> List[OpCode]`
+Returns list of OpCode objects describing how to turn sequence `a` into `b`.
+OpCode consists of attributes: `tag`, `i1`, `i2`, `j1`, `j2`. OpCode can be unpacked as tuple.
 
-#### Example:
+Usually the first tuple has `i1 == j1 == 0`, and remaining tuples have `i1` equal to the `i2`
+from the preceding tuple, and, likewise, `j1` equal to the previous `j2`. However, this rule is broken when
+`move` and `moved` tags appears in OpCodes list, due to sequence elements displacement detection.
+
+The tags are strings, with these meanings:
+* `replace` - `a[i1:i2]` should be replaced by `b[j1:j2]`
+* `delete` - `a[i1:i2]` should be deleted. Note that `j1==j2` in this case.
+* `insert` - `b[j1:j2]` should be inserted at `a[i1:i1]`. Note that `i1==i2` in this case.
+* `equal` - `a[i1:i2] == b[j1:j2]`
+* `move` -  `a[i1:i2]` should be moved to `b[j1:j2]` position. Note that `j1==j2` in this case.
+* `moved` - is opposite tag for `move`. It's not an operation necessary for turning sequence `a` into `b`. It indicates that `b[j1:j2]` is moved from `i1` position (or `b[j1:j2]` should be moved back to `a[i1:i2]`). Note that `i1==j2` in this case. It can be used for sequence elements movement visualisation.
+
+### Examples:
 ```python
->>> from mdiff import HeckelSequenceMatcher
+from mdiff import HeckelSequenceMatcher
 
->>> a = ['line1', 'line2', 'line3', 'line4', 'line5']
->>> b = ['line1', 'line3', 'line2', 'line4', 'line6']
->>> sm = HeckelSequenceMatcher(a, b)
->>> opcodes = sm.get_opcodes()
->>> opcodes
-
-[OpCode('equal', 0, 1, 0, 1), OpCode('move', 1, 2, 2, 2), OpCode('equal', 2, 3, 1, 2), OpCode('moved', 1, 1, 2, 3), OpCode('equal', 3, 4, 3, 4), OpCode('replace', 4, 5, 4, 5)]
+a = ['line1', 'line2', 'line3', 'line4', 'line5']
+b = ['line1', 'line3', 'line2', 'line4', 'line6']
+sm = HeckelSequenceMatcher(a, b)
+opcodes = sm.get_opcodes()
+for opcode in opcodes:
+    print(opcode)
+```
+```console
+OpCode('equal', 0, 1, 0, 1)
+OpCode('move', 1, 2, 2, 2)
+OpCode('equal', 2, 3, 1, 2)
+OpCode('moved', 1, 1, 2, 3)
+OpCode('equal', 3, 4, 3, 4)
+OpCode('replace', 4, 5, 4, 5)
 ```
 
-`OpCode` object can be unpacked like a tuple, so it can easily replace `difflib.SequenceMatcher.get_opcodes()` result:
+Extracting changes from input sequences:
 ```python
 ...
->>> for tag, i1, i2, j1, j2 in opcodes:
-...    print('{:7}   a[{}:{}] --> b[{}:{}] {!r:>8} --> {!r}'.format(tag, i1, i2, j1, j2, a[i1:i2], b[j1:j2]))
+for tag, i1, i2, j1, j2 in opcodes:
+    print('{:7}   a[{}:{}] --> b[{}:{}] {!r:>8} --> {!r}'.format(tag, i1, i2, j1, j2, a[i1:i2], b[j1:j2]))
 ```
 ```console
 equal     a[0:1] --> b[0:1]  ['line1'] --> ['line1']
@@ -61,30 +89,33 @@ equal     a[3:4] --> b[3:4]  ['line4'] --> ['line4']
 replace   a[4:5] --> b[4:5]  ['line5'] --> ['line6']
 ```
 
+### `DisplacementSequenceMatcher`
+`DisplacementSequenceMatcher` is a variation of `HeckelSequenceMatcher` class. The algorithm keeps tracking of every sequence element occurrence, which might give better result when both sequences have common duplicated elements. It tries to detect all sequences elements displacements, where `HeckelSequenceMatcher` might sometimes treat displaced elements as delete/insert. Use this class if finding all sequences displacements is crucial.
+
 ### Text diff
-#### `diff_lines_with_similarities`
+### `diff_lines_with_similarities`
 This function takes two input text sequences, turns them into lists of lines, generates opcodes for those lines
 and tries to find single characters differences in similar lines.
 
 Parameters:
-* `a: str` - source text sequence
-* `b: str` - target text sequence
-* `line_similarity_cutoff: float = 0.75` - number in range [0:1], where 1 means that lines are identical and 0 means that lines are completely different. Compared lines with similarity ratio > `line_similarity_cutoff` will be used to generate in-line opcodes.
-* `line_sm: SequenceMatcherBase = DisplacementSequenceMatcher()` - SequenceMatcher object used to find differences between input texts lines.
-* `similarities_sm: SequenceMatcherBase = SequenceMatcher()` - SequenceMatcher object used to find differences between similar lines (i.e. using `difflib.SequenceMatcher` when in-line diff displacement detection is not desirable).
+* `a: str` - source text.
+* `b: str` - target text.
+* `cutoff: float = 0.75` - value in range [0:1], where 0.0 means that lines are completely different and 1.0 means that lines are exactly the same. Line similarity cutoff is used to determine if sub opcodes for similar lines should be generated. If `cutoff == 1`, then in-line diff won't be generated.
+* `line_sm: SequenceMatcherBase = None` - SequenceMatcher object used to find differences between input texts lines. `HeckelSequenceMatcher()` will be used if not specified.
+* `inline_sm: SequenceMatcherBase = None` - SequenceMatcher object used to find differences between similar lines (i.e. using `difflib.SequenceMatcher` when in-line diff displacement detection is not desirable). `difflib.SequenceMatcher()` will be used if not specified.
 
 Returns `Tuple[a_lines: List[str], b_lines: List[str], opcodes: List[CompositeOpCode]]` where:
-* `a_lines`: is list of lines from `a` input text sequence.
-* `b_lines`: is list of lines from `b` input text sequence.
-* `opcodes`: is list of `CompositeOpCode` which behave the same way as `OpCode` (has `tag i1 i2 j1 j2` fields and can be unpacked), but has additional `children_opcodes` which stores list of opcodes with SequenceMatcher result for similar lines. List is empty if lines were not similar enough.
+* `a_lines` - is list of lines from `a` input text sequence.
+* `b_lines` - is list of lines from `b` input text sequence.
+* `opcodes` - is list of `CompositeOpCode` which behave the same way as `OpCode` (has `tag i1 i2 j1 j2` fields and can be unpacked), but has additional `children_opcodes` which stores list of nested opcodes with SequenceMatcher result for similar lines. List is empty if lines were not similar enough. (note that similar lines opcodes are generated only for `replace` tags, so children_opcodes list will be empty for every other tag).
 
-##### Example
+### Example
 ```python
 from mdiff import diff_lines_with_similarities, CompositeOpCode
 
 a = 'line1\nline2\nline3\nline4\nline5'
 b = 'line1\nline3\nline2\nline4\nline6'
-a_lines, b_lines, opcodes = diff_lines_with_similarities(a, b)
+a_lines, b_lines, opcodes = diff_lines_with_similarities(a, b, cutoff=0.75)
 
 for opcode in opcodes:
     tag, i1, i2, j1, j2 = opcode
@@ -105,7 +136,7 @@ replace   a_lines[4:5] --> b_lines[4:5]  ['line5'] --> ['line6']
 	equal     a_lines[4][0:4] --> b_lines[4][0:4]     'line' --> 'line'
 	replace   a_lines[4][4:5] --> b_lines[4][4:5]        '5' --> '6'
 ```
-
+Indented tags shows in-line differences, in this case `line5` and `line6` strings have the only difference at last character.
 ## CLI Tool
 
 mdiff also provides CLI tool (available only if installed using `pip install mdiff[cli]`). For more information

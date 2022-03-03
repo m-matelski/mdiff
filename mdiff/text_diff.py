@@ -69,7 +69,7 @@ def extract_replace_similarities(tag: str, i1: int, i2: int, j1: int, j2: int, a
         sm = SequenceMatcher()
 
     match_i, match_j, match_ratio = find_best_similar_match(i1, i2, j1, j2, a, b)
-    if match_ratio == 1.0:
+    if match_ratio >= 1.0:
         yield CompositeOpCode('equal', i1, i2, j1, j2)
     elif match_ratio > cutoff:
         # left
@@ -122,23 +122,23 @@ def extract_similarities(opcodes: OpCodesType, a: Sequence, b: Sequence, cutoff:
             yield CompositeOpCode(tag, i1, i2, j1, j2)
 
 
-def diff_lines_with_similarities(a: str, b: str, line_similarity_cutoff=0.75,
+def diff_lines_with_similarities(a: str, b: str, cutoff=0.75,
                                  line_sm: SequenceMatcherBase = None,
-                                 similarities_sm: SequenceMatcherBase = None) \
+                                 inline_sm: SequenceMatcherBase = None) \
         -> Tuple[List[str], List[str], List[CompositeOpCode]]:
     """
     Takes input strings "a" and "b", splits them by newline characters and generates line diff opcodes.
-    For every "replace" tag generated on line level a search for similar lines is performed,
-    if similarity exceeds line_similarity_cutoff value, then additional opcodes are generated
-    on character level that distinguish similar lines.
+    For every "replace" tag generated on line level, a search for similar lines is performed,
+    if similarity exceeds line_similarity_cutoff value, 
+    then additional opcodes are generated on character level that distinguish similar lines.
 
     :param a: source input text.
     :param b: target input text.
-    :param line_similarity_cutoff: Value in range of (0.0: 1.0) where 0.0 means that lines are completely different
+    :param cutoff: Value in range of (0.0: 1.0) where 0.0 means that lines are completely different
     and 1.0 means that lines are exactly the same. Line similarity cutoff is used to determine
     if sub opcodes for similar lines should be generated.
     :param line_sm: SequenceMatcher object used to generate diff tags between input texts lines.
-    :param similarities_sm: SequenceMatcher object used to generate diff tags between characters in similar lines.
+    :param inline_sm: SequenceMatcher object used to generate diff tags between characters in similar lines.
 
     :return: (a_lines, b_lines, opcodes) where:
         a_lines: is "a" input text split by newline characters.
@@ -151,7 +151,7 @@ def diff_lines_with_similarities(a: str, b: str, line_similarity_cutoff=0.75,
             will be empty for every other tag).
 
     Example:
-    >>> a, b, opcodes = diff_lines_with_similarities(a='aa1\\nbb2\\ncc3', b='aa1\\ncc2', line_similarity_cutoff=0.6)
+    >>> a, b, opcodes = diff_lines_with_similarities(a='aa1\\nbb2\\ncc3', b='aa1\\ncc2', cutoff=0.6)
     >>> a
     ['aa1', 'bb2', 'cc3']
     >>> b
@@ -163,13 +163,12 @@ def diff_lines_with_similarities(a: str, b: str, line_similarity_cutoff=0.75,
     """
     if line_sm is None:
         line_sm = HeckelSequenceMatcher()
-    if similarities_sm is None:
-        similarities_sm = SequenceMatcher()
+    if inline_sm is None:
+        inline_sm = SequenceMatcher()
 
     a_lines = a.splitlines(keepends=False)
     b_lines = b.splitlines(keepends=False)
     line_sm.set_seqs(a_lines, b_lines)
     line_opcodes = line_sm.get_opcodes()
-    line_opcodes_with_similarities = \
-        extract_similarities(line_opcodes, a_lines, b_lines, line_similarity_cutoff, similarities_sm)
+    line_opcodes_with_similarities = extract_similarities(line_opcodes, a_lines, b_lines, cutoff, inline_sm)
     return a_lines, b_lines, list(line_opcodes_with_similarities)

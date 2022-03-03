@@ -1,5 +1,6 @@
 ### 0.0.5
 * Updated readme.
+* Simplified some argument names and changed docstrings.
 
 ### 0.0.4
 * Fixing version number.

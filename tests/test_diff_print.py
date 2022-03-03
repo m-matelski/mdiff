@@ -14,8 +14,8 @@ class TestLineDiffPrint(unittest.TestCase):
         b = 'w22229\nw22228\nw44444\nw55555\nw66666'
         line_sm = HeckelSequenceMatcher()
         similarities_sm = SequenceMatcher()
-        a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, line_similarity_cutoff=0.75,
-                                                                 line_sm=line_sm, similarities_sm=similarities_sm)
+        a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, cutoff=0.75,
+                                                                 line_sm=line_sm, inline_sm=similarities_sm)
         printer = cli_vis.LineDiffConsolePrinter(a=a_lines, b=b_lines, seq=opcodes,
                                                  characters=cli_vis.unicode_console_characters,
                                                  colors=cli_vis.console_colors_back, line_margin=3, equal_context=-1)
@@ -26,8 +26,8 @@ class TestLineDiffPrint(unittest.TestCase):
         b = read_file(Path('tests/resources/compares/comp1/b.txt').absolute())
         line_sm = HeckelSequenceMatcher(replace_mode=True)
         similarities_sm = SequenceMatcher()
-        a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, line_similarity_cutoff=0.75,
-                                                                 line_sm=line_sm, similarities_sm=similarities_sm)
+        a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, cutoff=0.75,
+                                                                 line_sm=line_sm, inline_sm=similarities_sm)
         printer = cli_vis.LineDiffConsolePrinter(a=a_lines, b=b_lines, seq=list(opcodes),
                                                  characters=cli_vis.unicode_console_characters,
                                                  colors=cli_vis.console_colors_back, line_margin=3, equal_context=-1)
@@ -38,8 +38,8 @@ class TestLineDiffPrint(unittest.TestCase):
         b = read_file(Path('tests/resources/compares/comp2/b.txt').absolute())
         line_sm = HeckelSequenceMatcher()
         similarities_sm = SequenceMatcher()
-        a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, line_similarity_cutoff=0.75,
-                                                                 line_sm=line_sm, similarities_sm=similarities_sm)
+        a_lines, b_lines, opcodes = diff_lines_with_similarities(a=a, b=b, cutoff=0.75,
+                                                                 line_sm=line_sm, inline_sm=similarities_sm)
         printer = cli_vis.LineDiffConsolePrinter(a=a_lines, b=b_lines, seq=list(opcodes),
                                                  characters=cli_vis.unicode_console_characters,
                                                  colors=cli_vis.console_colors_fore, line_margin=3, equal_context=-1)
