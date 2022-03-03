@@ -3,7 +3,7 @@ This module provides BaseBlockExtractor template method base class and some of i
 """
 
 from abc import ABC, abstractmethod
-from collections import Sequence
+from collections.abc import Sequence
 from typing import Any, Tuple, Union
 
 from mdiff.utils import sequences_equal, OpCode
