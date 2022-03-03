@@ -9,7 +9,7 @@ from mdiff.utils import read_file
 
 
 class TestLineDiffPrint(unittest.TestCase):
-    def test1(self):
+    def test_simple_diff_print(self):
         a = 'w11111\nw22222\nw33333\nw44444\nw55555\nw66666'
         b = 'w22229\nw22228\nw44444\nw55555\nw66666'
         line_sm = HeckelSequenceMatcher()
@@ -21,7 +21,7 @@ class TestLineDiffPrint(unittest.TestCase):
                                                  colors=cli_vis.console_colors_back, line_margin=3, equal_context=-1)
         printer.print()
 
-    def test2(self):
+    def test_diff_print_1(self):
         a = read_file(Path('tests/resources/compares/comp1/a.txt').absolute())
         b = read_file(Path('tests/resources/compares/comp1/b.txt').absolute())
         line_sm = HeckelSequenceMatcher(replace_mode=True)
@@ -33,7 +33,7 @@ class TestLineDiffPrint(unittest.TestCase):
                                                  colors=cli_vis.console_colors_back, line_margin=3, equal_context=-1)
         printer.print()
 
-    def test3(self):
+    def test_diff_print_2(self):
         a = read_file(Path('tests/resources/compares/comp2/a.txt').absolute())
         b = read_file(Path('tests/resources/compares/comp2/b.txt').absolute())
         line_sm = HeckelSequenceMatcher()
