@@ -160,4 +160,4 @@ Options:
 ```
 ### Example
 Sample output for `mdiff a.txt b.txt` command:
-![mdiff example 1](resources/readme/mdiff_cli1.PNG)
+![](https://github.com/m-matelski/mdiff/raw/master/resources/readme/mdiff_cli1.PNG)

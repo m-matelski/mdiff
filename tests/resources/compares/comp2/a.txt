@@ -6,7 +6,7 @@ from typing import Sequence, Dict
 
 import colorama
 
-from mdiff.utils import len_or_1, OpCodesType, CompositeOpCode, OpCodeType
+from mdiff.utils import len_or_1
 
 
 @dataclass
