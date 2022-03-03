@@ -191,4 +191,4 @@ Options:
 ```
 ### Example
 Sample output for `mdiff a.txt b.txt` command:
-![](https://github.com/m-matelski/mdiff/raw/master/resources/readme/mdiff_cli1.PNG)
+![](https://github.com/m-matelski/mdiff/raw/master/resources/readme/mdiff_cli1.png)
