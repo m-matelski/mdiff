@@ -12,9 +12,6 @@ from mdiff.utils import len_or_1, OpCodesType, CompositeOpCode, OpCodeType, OpCo
 STYLE_RESET = colorama.Style.RESET_ALL + colorama.Fore.RESET + colorama.Back.RESET
 
 
-# TODO: fix colorama.init makes windows cmd not printing colors. Without init it works ???? why?
-# colorama.init()
-
 @dataclass
 class ConsoleCharacters:
     sep_line_num: str
@@ -271,8 +268,6 @@ class LineDiffConsolePrinter:
         return label_string
 
     def get_line_string(self, line: str, opcode: Union[OpCodeType, CompositeOpCode], side: Literal['a', 'b']) -> str:
-        # TODO: print replace without children similarieties as delete insert
-
         if side == 'a':
             get_opcode_start_idx = itemgetter(1)
             get_opcode_end_idx = itemgetter(2)
@@ -404,53 +399,7 @@ class LineDiffConsolePrinter:
 
     def print(self):
         # colorama.init(autoreset=False, convert=True)
-        # colorama.init()
-        # colorama.init()
         for opcode in self.seq:
             self.print_opcode(opcode)
         print(colorama.Fore.RESET + colorama.Back.RESET)
         colorama.deinit()
-
-
-def print_opcodes(a: Sequence, b: Sequence, opcodes: OpCodesType):
-    for tag, i1, i2, j1, j2 in opcodes:
-        print('{:7}   a[{}:{}] --> b[{}:{}] {!r:>8} --> {!r}'.format(tag, i1, i2, j1, j2, a[i1:i2], b[j1:j2]))
-
-
-def print_simple_seq_comparison(a: Sequence, b: Sequence, opcodes: OpCodesType):
-    a_longest = max([len_or_1(i) for i in a])
-    b_longest = max([len_or_1(i) for i in b])
-    left_col_len = a_longest + 3
-    right_col_len = b_longest + 3
-
-    colormode = colorama.Fore
-
-    print_format = f'{{left_op:1}} {{left_f:<{left_col_len}}} || {{right_op:1}} {{right_f:<{right_col_len}}}'
-    for tag, i1, i2, j1, j2 in opcodes:
-        if tag == 'equal':
-            for left, right in zip(a[i1:i2], b[j1:j2]):
-                print(print_format.format(left_op='', left_f=left, right_op='', right_f=right))
-        if tag == 'insert':
-            for right in b[j1:j2]:
-                print(colormode.GREEN + print_format.format(left_op='', left_f='', right_op='+', right_f=right))
-        if tag == 'delete':
-            for left in a[i1:i2]:
-                print(colormode.RED + print_format.format(left_op='-', left_f=left, right_op='', right_f=''))
-        if tag == 'replace':
-            for left, right in zip_longest(a[i1:i2], b[j1:j2], fillvalue=''):
-                print(colormode.YELLOW + print_format.format(left_op='R', left_f=left, right_op='R', right_f=right))
-        if tag == 'move':
-            for left in a[i1:i2]:
-                print(colormode.BLUE + print_format.format(left_op='M', left_f=left, right_op='', right_f=''))
-        if tag == 'moved':
-            for right in b[j1:j2]:
-                print(colormode.BLUE + print_format.format(left_op='', left_f='', right_op='M', right_f=right))
-
-
-def print_diff_lines_with_similarities(a: Sequence, b: Sequence, opcodes: OpCodesType, mode='ascii', margin=3):
-    con_chars = console_characters[mode]
-    a_longest = max([len_or_1(i) for i in a])
-    b_longest = max([len_or_1(i) for i in b])
-    left_col_len = a_longest + margin
-    right_col_len = b_longest + margin
-    line_format = f'{{left_op:1}} {{left_f:<{left_col_len}}} || {{right_op:1}} {{right_f:<{right_col_len}}}'

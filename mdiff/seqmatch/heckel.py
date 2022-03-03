@@ -216,8 +216,9 @@ class HeckelSequenceMatcher:
 
     def get_opcodes(self) -> List[OpCode]:
         """
-        Similar to difflib.SequenceMatcher.get_opcodes() - this method returns list of 5-elements tuples (OpCodes)
-        describing how to turn sequence "a" into "b". Each tuple is of the form (tag, i1, i2, j1, j2).
+        Returns list of OpCode objects describing how to turn sequence "a" into "b".
+        OpCode consists of attributes: tag, i1, i2, j1, j2. OpCode can be unpacked as tuple
+        (to be consistent with difflib.SequenceMatcher.get_opcodes() result)
 
         Usually the first tuple has i1 == j1 == 0, and remaining tuples have i1 equal to the i2
         from the preceding tuple, and, likewise, j1 equal to the previous j2. However this rule is broken when
@@ -326,7 +327,7 @@ class DisplacementSequenceMatcher(HeckelSequenceMatcher):
     """
     DisplacementSequenceMatcher is a variation of HeckelSequenceMatcher class.
     Unlike HeckelSequenceMatcher, the algorithm keeps tracking of every sequence element occurrence, which might give
-    better result when both sequences have many common duplicated elements. I tries to detect all sequences elements
+    better result when both sequences have many common duplicated elements. It tries to detect all sequences elements
     displacements, where HeckelSequenceMatcher might sometimes treat displaced elements as delete/insert.
     Use this class if finding all sequences displacements is crucial.
 
