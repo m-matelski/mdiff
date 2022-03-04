@@ -1,6 +1,6 @@
 # This workflow will build sdist and upload a Python Package using Twine when a release is created.
 
-name: Upload Python Package
+name: Build and Upload Python Package
 
 on:
   release:
