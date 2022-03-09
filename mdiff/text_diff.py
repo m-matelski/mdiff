@@ -124,7 +124,9 @@ def extract_similarities(opcodes: OpCodesType, a: Sequence, b: Sequence, cutoff:
 
 def diff_lines_with_similarities(a: str, b: str, cutoff=0.75,
                                  line_sm: SequenceMatcherBase = None,
-                                 inline_sm: SequenceMatcherBase = None) \
+                                 inline_sm: SequenceMatcherBase = None,
+                                 keepends=False,
+                                 case_sensitive=True) \
         -> Tuple[List[str], List[str], List[CompositeOpCode]]:
     """
     Takes input strings "a" and "b", splits them by newline characters and generates line diff opcodes.
@@ -139,6 +141,7 @@ def diff_lines_with_similarities(a: str, b: str, cutoff=0.75,
     if sub opcodes for similar lines should be generated.
     :param line_sm: SequenceMatcher object used to generate diff tags between input texts lines.
     :param inline_sm: SequenceMatcher object used to generate diff tags between characters in similar lines.
+    :param keepends: whether to keep newline characters when splitting input sequences.
 
     :return: (a_lines, b_lines, opcodes) where:
         a_lines: is "a" input text split by newline characters.
@@ -166,9 +169,15 @@ def diff_lines_with_similarities(a: str, b: str, cutoff=0.75,
     if inline_sm is None:
         inline_sm = SequenceMatcher()
 
-    a_lines = a.splitlines(keepends=False)
-    b_lines = b.splitlines(keepends=False)
-    line_sm.set_seqs(a_lines, b_lines)
+    a_lines = a.splitlines(keepends=keepends)
+    b_lines = b.splitlines(keepends=keepends)
+    if case_sensitive:
+        sm_a_lines = a_lines
+        sm_b_lines = b_lines
+    else:
+        sm_a_lines = [i.lower() for i in a_lines]
+        sm_b_lines = [i.lower() for i in b_lines]
+    line_sm.set_seqs(sm_a_lines, sm_b_lines)
     line_opcodes = line_sm.get_opcodes()
-    line_opcodes_with_similarities = extract_similarities(line_opcodes, a_lines, b_lines, cutoff, inline_sm)
+    line_opcodes_with_similarities = extract_similarities(line_opcodes, sm_a_lines, sm_b_lines, cutoff, inline_sm)
     return a_lines, b_lines, list(line_opcodes_with_similarities)
