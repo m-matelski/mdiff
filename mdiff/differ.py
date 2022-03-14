@@ -5,7 +5,7 @@ from mdiff import diff_lines_with_similarities
 from mdiff.seqmatch.utils import SequenceMatcherName, seq_matcher_factory
 
 import mdiff.visualisation.terminal as cli_vis
-from mdiff.visualisation.gui_tkinter.diff_result import DiffResult
+from mdiff.visualisation.gui_tkinter.diff_result import DiffResult, DiffResultWindowBuilder
 
 
 class TextDiffer(ABC):
@@ -51,14 +51,12 @@ class ConsoleTextDiffer(TextDiffer):
 class TkinterGuiDiffer(TextDiffer):
 
     def run(self):
-        window = tk.Tk()
-        window.title('Diff Result')
+        root = tk.Tk()
+        root.title('Diff Result')
 
-        res = DiffResult(window)
-        res.set_diff_params(a=self.a, b=self.b, line_sm_name=self.line_sm, inline_sm_name=self.inline_sm,
-                            cutoff=self.cutoff, case_sensitive=self.case_sensitive)
-        res.grid(column=0, row=0, sticky='nsew')
-        res.generate_diff()
-        window.columnconfigure(0, weight=1)
-        window.rowconfigure(0, weight=1)
-        window.mainloop()
+        diff_result = DiffResult(root)
+        window = DiffResultWindowBuilder(root, diff_result)
+        diff_result.set_diff_params(a=self.a, b=self.b, line_sm_name=self.line_sm, inline_sm_name=self.inline_sm,
+                                    cutoff=self.cutoff, case_sensitive=self.case_sensitive)
+        diff_result.generate_diff()
+        root.mainloop()
