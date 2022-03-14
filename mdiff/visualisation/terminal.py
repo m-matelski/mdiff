@@ -398,7 +398,7 @@ class LineDiffConsolePrinter:
                 )
 
     def print(self):
-        # colorama.init(autoreset=False, convert=True)
+        colorama.init(autoreset=False, convert=True)
         for opcode in self.seq:
             self.print_opcode(opcode)
         print(colorama.Fore.RESET + colorama.Back.RESET)
