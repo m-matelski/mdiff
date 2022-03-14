@@ -1,4 +1,6 @@
 import tkinter as tk
+from abc import ABC, abstractmethod
+from typing import Union
 
 
 class ScrolledText(tk.Text):
@@ -48,3 +50,9 @@ class ScrolledText(tk.Text):
 
     def __str__(self):
         return str(self.frame)
+
+
+class WindowBuilder(ABC):
+    def __init__(self, window: Union[tk.Tk, tk.Toplevel], content: tk.Frame):
+        self.window = window
+        self.content = content

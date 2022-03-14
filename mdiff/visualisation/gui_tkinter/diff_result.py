@@ -2,13 +2,13 @@ import tkinter as tk
 from enum import Enum
 from itertools import zip_longest
 from tkinter import ttk
-from typing import Protocol
+from typing import Protocol, Union
 
 from mdiff import diff_lines_with_similarities, CompositeOpCode
 from mdiff.seqmatch.utils import SequenceMatcherName, seq_matcher_factory
 from mdiff.utils import CompositeDelegationMixin, get_enum_values, sort_seq_by_other_seq, sort_string_seq, \
     sort_string_seq_by_other
-from mdiff.visualisation.gui_tkinter.utils import ScrolledText
+from mdiff.visualisation.gui_tkinter.utils import ScrolledText, WindowBuilder
 
 
 class ResultText(ScrolledText):
@@ -104,7 +104,7 @@ class DiffResult(tk.Frame):
         self.b = ''
 
         self.frame_bottom = tk.Frame(self)
-        self.frame_bottom.grid(column=0, row=1, sticky='nsew', padx=3, pady=5)
+        self.frame_bottom.grid(column=0, row=1, sticky='nsew', padx=3, pady=1)
         self.frame_bottom.columnconfigure(0, weight=1)
         self.frame_bottom.columnconfigure(1, weight=1)
         self.frame_bottom.rowconfigure(0, weight=1)
@@ -123,7 +123,7 @@ class DiffResult(tk.Frame):
 
         # ---GUI--- top frame layout
         self.frame_top = tk.Frame(self)
-        self.frame_top.grid(column=0, row=0, sticky='', padx=3, pady=5)
+        self.frame_top.grid(column=0, row=0, sticky='', padx=3, pady=1)
 
         # self.frame_top.config(bd=1, relief=tk.SOLID)
         # self.frame_top.grid_columnconfigure(0, weight=1)
@@ -185,7 +185,7 @@ class DiffResult(tk.Frame):
 
         # ---GUI
         self.case_sensitive = tk.BooleanVar(value=True)
-        self.check_case_sensitive = tk.Checkbutton(self.frame_top, text='Case sensitive:', variable=self.case_sensitive)
+        self.check_case_sensitive = tk.Checkbutton(self.frame_top, text='Case sensitive', variable=self.case_sensitive)
         self.check_case_sensitive.grid(column=4, row=0, sticky='nw', padx=10)
 
         # ---GUI--- generate
@@ -199,20 +199,16 @@ class DiffResult(tk.Frame):
         self.grid_rowconfigure(1, weight=10000)
         self.grid_rowconfigure(0, weight=1)
 
-        # self.load_comparison_result()
-        # TODO: run diff on init with default settings
-        # TODO: sort by
-        # TODO: swap texts
-        # TODO: keep text view position when regenerating diff
-
     def set_a(self, a):
         self.a = a
 
     def set_b(self, b):
         self.b = b
 
-    def set_diff_params(self, a: str, b: str, line_sm_name: SequenceMatcherName, inline_sm_name: SequenceMatcherName,
-                        cutoff: float, case_sensitive: bool):
+    def set_diff_params(self, a: str, b: str,
+                        line_sm_name: SequenceMatcherName = SequenceMatcherName.HECKEL,
+                        inline_sm_name: SequenceMatcherName = SequenceMatcherName.HECKEL,
+                        cutoff: float = 0.75, case_sensitive: bool = False):
         if not 0.0 <= cutoff <= 1.0:
             raise ValueError('cutoff must be in range: 0.0 <= cutoff <= 1.0')
         self.scale_cutoff_value.set(cutoff)
@@ -239,6 +235,8 @@ class DiffResult(tk.Frame):
             return '\n'.join(sort_string_seq_by_other(a_lines, b_lines, case_sensitive)), self.b
 
     def generate_diff(self):
+        src_yview = self.text_source.yview()
+        tgt_yview = self.text_target.yview()
         self.texts.configure(state='normal')
         self.texts.delete('1.0', tk.END)
 
@@ -280,10 +278,10 @@ class DiffResult(tk.Frame):
                 self.text_source.insert('end', left_line, (left_text_tag,))
                 self.text_target.insert('end', right_line, (right_text_tag,))
 
-        self.texts.configure(state='disabled')
 
-    def on_option_change(self):
-        print('on_option_change')
+        self.texts.configure(state='disabled')
+        self.text_source.yview_moveto(src_yview[0])
+        self.text_target.yview_moveto(tgt_yview[0])
 
     def sort_by_selection(self, event=None):
         self.combo_sort_by.selection_clear()
@@ -329,7 +327,22 @@ class DiffResult(tk.Frame):
                self.text_source.vbar.get() == self.text_target.vbar.get()
 
 
-class DiffResultWindow(tk.Toplevel):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        # self.diff_result =
+class DiffResultWindowBuilder(WindowBuilder):
+    def __init__(self, window: Union[tk.Tk, tk.Toplevel], content: tk.Frame):
+        super().__init__(window, content)
+        self.content.grid(column=0, row=0, sticky='nsew')
+        self.window.rowconfigure(0, weight=1)
+        self.window.columnconfigure(0, weight=1)
+
+        self.window.option_add('*tearOff', tk.FALSE)
+        self.menu_bar = tk.Menu(self.window)
+        self.window['menu'] = self.menu_bar
+
+        self.menu_file = tk.Menu(self.menu_bar)
+        self.menu_bar.add_cascade(menu=self.menu_file, label='File', underline=0)
+        self.menu_file.add_command(label='Close', command=lambda: self.window.destroy())
+
+        self.menu_edit = tk.Menu(self.menu_bar)
+        self.menu_bar.add_cascade(menu=self.menu_edit, label='Edit', underline=0)
+        self.menu_edit.add_command(label='Copy', accelerator='Ctrl+C',
+                                   command=lambda: self.window.focus_get().event_generate("<<Copy>>"))
