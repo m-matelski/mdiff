@@ -3,8 +3,10 @@ This module provides functions and structures for common package usage.
 """
 
 import math
+from enum import Enum
+from functools import lru_cache
 from pathlib import Path
-from typing import NamedTuple, Any, Tuple, List, Sequence, Union, Protocol
+from typing import NamedTuple, Any, Tuple, List, Sequence, Union, Protocol, Type
 
 
 class OpCode:
@@ -209,23 +211,104 @@ def len_or_1(a):
         return 1
 
 
-def pair_iteration(seq: Sequence, n=2):
-    seq_l = list(seq)
-    i = 0
-    while i < len(seq_l):
-        yield tuple(seq_l[i:i + n])
-        i += n
-
-
-def get_composite_layer(ob, n, children_getter):
-    if n == 0:
-        yield ob
-    else:
-        for i in children_getter(ob):
-            yield from get_composite_layer(i, n - 1, children_getter)
-
-
 def read_file(p: Path):
     with open(p) as file:
         content = file.read()
     return content
+
+
+class AttributeSequenceHandler:
+    def __init__(self, seq):
+        self.seq = seq
+
+    def __call__(self, *args, **kwargs):
+        return [i(*args, **kwargs) for i in self.seq]
+
+
+class CompositeDelegationMixin:
+    """
+    This class provides auto delegation super class methods to children instances.
+    It allows to treat composite object as single instance, also direct inheritance allows IDE to generate hints.
+    """
+
+    def __init__(self):
+        self.__children__ = []
+
+    def __getattribute__(self, item):
+        # Do not delegate, until children defined (avoids error when instance uses self in init process)
+        try:
+            children = object.__getattribute__(self, '__children__')
+        except AttributeError:
+            children = []
+        if not children:
+            return object.__getattribute__(self, item)
+
+        if item == '__children__':
+            return object.__getattribute__(self, item)
+        children_items = [object.__getattribute__(i, item) for i in self.__children__]
+        if callable(object.__getattribute__(self, item)):
+            # Assumption: if base class attribute is callable, then all that children attributes are callable
+            return AttributeSequenceHandler(children_items)
+        else:
+            return children_items
+
+
+class StringEnumChoice(str, Enum):
+    """
+    Base class for typer choice enum strings. Predefined __str__ method fixes the bug where
+    default showed StringEnumChoice.value instead of value
+    """
+
+    def __str__(self):
+        return self.value
+
+
+def get_enum_values(enum: Type[Enum]):
+    return [e.value for e in enum]
+
+
+def pop_default(lst: List, index=-1, default=None):
+    try:
+        return lst.pop(index)
+    except IndexError:
+        return default
+
+
+def sort_seq_by_other_seq_indexes(seq: Sequence, other: Sequence) -> List[Tuple[int, Any]]:
+    b_hash = dict()
+    seq = enumerate(seq)
+    for i, item in enumerate(other):
+        b_hash.setdefault(item, []).append(i)
+
+    result = sorted(seq, key=lambda x: pop_default(b_hash.get(x[1], []), 0, math.inf))
+    return result
+
+
+def sort_seq_by_other_seq(seq: Sequence, other: Sequence) -> List:
+    return [i[1] for i in sort_seq_by_other_seq_indexes(seq, other)]
+
+
+def sort_string_seq_by_other(seq: Sequence[str], other: Sequence[str], case_sensitive=True) -> List[str]:
+    if case_sensitive:
+        a_seq = seq
+        b_seq = other
+    else:
+        a_seq = [i.lower() for i in seq]
+        b_seq = [i.lower() for i in other]
+
+    idx_sort, _ = zip(*sort_seq_by_other_seq_indexes(a_seq, b_seq))
+    result = [seq[i] for i in idx_sort]
+    return result
+
+
+def sort_string_seq(seq: Sequence[str], case_sensitive=True) -> List[str]:
+    if case_sensitive:
+        return sorted(seq)
+    else:
+        return sorted(seq, key=lambda x: x.lower())
+
+
+@lru_cache
+def get_app_version() -> str:
+    version = read_file(Path('../VERSION'))
+    return version

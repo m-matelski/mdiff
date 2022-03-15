@@ -1,24 +1,11 @@
-from enum import Enum
 from pathlib import Path
 
 import typer
 
-from mdiff.seqmatch.utils import seq_matcher_factory
-from mdiff.text_diff import diff_lines_with_similarities
-import mdiff.visualisation.terminal as cli_vis
-from mdiff.utils import read_file
+from mdiff.differ import ConsoleTextDiffer, TkinterGuiDiffer
+from mdiff.utils import read_file, StringEnumChoice
 
 sm_valid_names = ('standard', 'heckel', 'displacement')
-
-
-class StringEnumChoice(str, Enum):
-    """
-    Base class for typer choice enum strings. Predefined __str__ method fixes the bug where
-    default showed StringEnumChoice.value instead of value
-    """
-
-    def __str__(self):
-        return self.value
 
 
 class SequenceMatcherName(StringEnumChoice):
@@ -49,12 +36,14 @@ def cli_diff(source_file: Path = typer.Argument(..., help="Source file path to c
                  0.75, min=0.0, max=1.0,
                  help='Line similarity ratio cutoff. If value exceeded then finds in-line differences in similar lines.'
              ),
+             gui: bool = typer.Option(False, help='Open GUI window with diff result.'),
+             case_sensitive: bool = typer.Option(True, help='Whether diff is going to be case sensitive.'),
              char_mode: CharacterMode = typer.Option(
                  CharacterMode.UTF8,
-                 help='Character set used when printing diff result.'),
+                 help='Terminal character set used when printing diff result.'),
              color_mode: ColorMode = typer.Option(
                  ColorMode.FORE,
-                 help='Color mode used when printing diff result.'
+                 help='Terminal color mode used when printing diff result.'
              )):
     """
     Reads 2 files from provided paths, compares their content and prints diff.
@@ -72,18 +61,15 @@ def cli_diff(source_file: Path = typer.Argument(..., help="Source file path to c
     """
     source = read_file(source_file)
     target = read_file(target_file)
-    line_sm_instance = seq_matcher_factory(line_sm.value)()
-    inline_sm_instance = seq_matcher_factory(inline_sm.value)()
-    console_characters = cli_vis.get_console_characters(char_mode.value)
-    console_colors = cli_vis.get_console_colors(color_mode.value)
-
-    a_lines, b_lines, opcodes = diff_lines_with_similarities(
-        a=source, b=target, cutoff=cutoff, line_sm=line_sm_instance, inline_sm=inline_sm_instance)
-
-    printer = cli_vis.LineDiffConsolePrinter(a=a_lines, b=b_lines, seq=opcodes,
-                                             characters=console_characters,
-                                             colors=console_colors, line_margin=3, equal_context=-1)
-    printer.print()
+    if not gui:
+        differ = ConsoleTextDiffer(a=source, b=target, line_sm=line_sm, inline_sm=inline_sm, cutoff=cutoff,
+                                   color_mode=color_mode.value, character_mode=char_mode.value,
+                                   case_sensitive=case_sensitive)
+        differ.run()
+    else:
+        differ = TkinterGuiDiffer(a=source, b=target, line_sm=line_sm, inline_sm=inline_sm, cutoff=cutoff,
+                                  case_sensitive=case_sensitive)
+        differ.run()
 
 
 def main():

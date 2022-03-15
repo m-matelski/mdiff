@@ -1,11 +1,12 @@
 from difflib import SequenceMatcher
-from typing import Literal, Type
+from enum import Enum
+from typing import Type
 
 from mdiff.seqmatch.heckel import HeckelSequenceMatcher, DisplacementSequenceMatcher
 from mdiff.utils import SequenceMatcherBase
 
 
-class SequenceMatcherName:
+class SequenceMatcherName(str, Enum):
     STANDARD = 'standard'
     HECKEL = 'heckel'
     DISPLACEMENT = 'displacement'
@@ -18,7 +19,7 @@ seq_matchers = {
 }
 
 
-def seq_matcher_factory(seq_matcher_type: str) -> Type[SequenceMatcherBase]:
+def seq_matcher_factory(seq_matcher_type: SequenceMatcherName) -> Type[SequenceMatcherBase]:
     values = SequenceMatcherName.__dict__.values()
     if seq_matcher_type not in values:
         raise ValueError(f'seq_matcher_type must be in: {values}')

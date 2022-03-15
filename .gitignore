@@ -4,3 +4,4 @@ comp_examples
 venv
 build
 dist
+mdiff.egg-info

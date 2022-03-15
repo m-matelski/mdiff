@@ -1,15 +1,20 @@
 import setuptools
 
+from mdiff.utils import get_app_version
+
 
 def readme():
     with open('README.md') as f:
         return f.read()
 
 
+with open('VERSION') as f:
+    VERSION = f.read()
+
 setuptools.setup(
     name='mdiff',
     packages=setuptools.find_packages(),
-    version='0.0.5',
+    version=VERSION,
     license='MIT',
     description='Sequence matcher with displacement detection.',
     long_description=readme(),
@@ -19,7 +24,10 @@ setuptools.setup(
     url='https://github.com/m-matelski/mdiff',
     keywords=['sequence', 'diff', 'heckel', 'text'],
     entry_points={
-        'console_scripts': ['mdiff=mdiff.cli:main'],
+        'console_scripts': [
+            'mdiff=mdiff.cli:main',
+            'mdiff-gui=mdiff.visualisation.gui_tkinter.main:start_app'
+        ]
     },
     extras_require={
         'cli': ['colorama==0.4.*', 'typer==0.4.*']

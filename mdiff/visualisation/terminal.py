@@ -7,7 +7,7 @@ from typing import Sequence, Dict, Literal, Union, Tuple
 
 import colorama
 
-from mdiff.utils import len_or_1, OpCodesType, CompositeOpCode, OpCodeType, OpCode
+from mdiff.utils import CompositeOpCode, OpCodeType, OpCode
 
 STYLE_RESET = colorama.Style.RESET_ALL + colorama.Fore.RESET + colorama.Back.RESET
 
@@ -398,7 +398,7 @@ class LineDiffConsolePrinter:
                 )
 
     def print(self):
-        # colorama.init(autoreset=False, convert=True)
+        colorama.init(autoreset=False, convert=True)
         for opcode in self.seq:
             self.print_opcode(opcode)
         print(colorama.Fore.RESET + colorama.Back.RESET)

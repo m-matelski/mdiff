@@ -10,10 +10,10 @@ For plain python package (no additional dependencies):
 pip install mdiff
 ```
 
-For additional CLI tool functionalities (uses external packages such as [colorama](https://github.com/tartley/colorama), 
+For additional CLI tool and GUI functionalities (uses external packages such as [colorama](https://github.com/tartley/colorama), 
 or [Typer](https://github.com/tiangolo/typer)):
 ```console
-pip install mdiff[cli]
+pip install mdiff[tools]
 ```
 
 ## Usage
@@ -139,7 +139,7 @@ replace   a_lines[4:5] --> b_lines[4:5]  ['line5'] --> ['line6']
 Indented tags shows in-line differences, in this case `line5` and `line6` strings have the only difference at last character.
 ## CLI Tool
 
-mdiff also provides CLI tool (available only if installed using `pip install mdiff[cli]`). For more information
+mdiff also provides CLI tool (available only if installed using `pip install mdiff[tools]`). For more information
 type `mdiff --help`
 
 ```console
@@ -178,10 +178,15 @@ Options:
   --cutoff FLOAT RANGE            Line similarity ratio cutoff. If value
                                   exceeded then finds in-line differences in
                                   similar lines.  [default: 0.75; 0.0<=x<=1.0]
-  --char-mode [utf8|ascii]        Character set used when printing diff
-                                  result.  [default: utf8]
-  --color-mode [fore|back]        Color mode used when printing diff result.
-                                  [default: fore]
+  --gui / --no-gui                Open GUI window with diff result.  [default:
+                                  no-gui]
+  --case-sensitive / --no-case-sensitive
+                                  Whether diff is going to be case sensitive.
+                                  [default: case-sensitive]
+  --char-mode [utf8|ascii]        Terminal character set used when printing
+                                  diff result.  [default: utf8]
+  --color-mode [fore|back]        Terminal color mode used when printing diff
+                                  result.  [default: fore]
   --install-completion [bash|zsh|fish|powershell|pwsh]
                                   Install completion for the specified shell.
   --show-completion [bash|zsh|fish|powershell|pwsh]
@@ -191,4 +196,13 @@ Options:
 ```
 ### Example
 Sample output for `mdiff a.txt b.txt` command:
+
 ![](https://github.com/m-matelski/mdiff/raw/master/resources/readme/mdiff_cli1.png)
+
+Showing result in GUI `mdiff a.txt b.txt --gui`:
+
+![](https://github.com/m-matelski/mdiff/raw/master/resources/readme/mdiff_gui1.png)
+
+
+## GUI
+Use `mdiff-gui` command to launch GUI application. 
