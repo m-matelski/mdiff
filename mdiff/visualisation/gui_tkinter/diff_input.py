@@ -51,7 +51,7 @@ class DiffInputWindow(tk.Tk):
 
         self.menu_file = tk.Menu(self.menu_bar)
         self.menu_bar.add_cascade(menu=self.menu_file, label='File', underline=0)
-        self.menu_file.add_command(label='Close', command=lambda: self.window.destroy())
+        self.menu_file.add_command(label='Close', command=lambda: self.destroy())
 
         self.menu_edit = tk.Menu(self.menu_bar)
         self.menu_bar.add_cascade(menu=self.menu_edit, label='Edit', underline=0)
