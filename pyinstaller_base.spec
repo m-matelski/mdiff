@@ -1,11 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 import platform
+from pathlib import Path
 
 
 block_cipher = None
 
+APP_MODULE_PATH = Path('mdiff/visualisation/gui_tkinter/main.py')
 
-a = Analysis(['mdiff\\visualisation\\gui_tkinter\\main.py'],
+a = Analysis([str(APP_MODULE_PATH)],
              pathex=[],
              binaries=[],
              datas=[],
