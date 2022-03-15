@@ -1,19 +1,18 @@
 import setuptools
 
-from mdiff.utils import get_app_version
-
 
 def readme():
     with open('README.md') as f:
         return f.read()
 
-
 with open('VERSION') as f:
     VERSION = f.read()
 
+VERSION = '0.1.1'
+
 setuptools.setup(
     name='mdiff',
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
     version=VERSION,
     license='MIT',
     description='Sequence matcher with displacement detection.',

@@ -1,4 +1,7 @@
-### 0.10.0
+### 0.1.1
+* Fixed package installation error.
+
+### 0.1.0
 * Added GUI widget to present diff result
 * Added standalone GUI application.
 * Added `case-sensitive` parameter to diff.
