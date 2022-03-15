@@ -3,8 +3,7 @@ name: Build and Upload GUI applications
 
 on:
   release:
-    types:
-      - created
+    types: [created, edited]
       
 jobs:
   deploy:
