@@ -5,8 +5,6 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
-with open('VERSION') as f:
-    VERSION = f.read()
 
 VERSION = '0.1.1'
 
