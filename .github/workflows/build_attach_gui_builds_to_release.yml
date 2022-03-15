@@ -3,8 +3,9 @@ name: Build and Upload GUI applications
 
 on:
   release:
-    types: [created, edited]
-      
+    types:
+      - created
+
 jobs:
   deploy:
     strategy:
@@ -15,43 +16,43 @@ jobs:
       VERSION: $(cat VERSION)
     steps:
     - uses: actions/checkout@v2
-        
+
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
         python-version: 3.9
-        
+
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
-        
-        
+
+
     - name: Windows build
       if: matrix.os == 'windows-latest'
       run: |
         bash pyinstaller_start.sh
         7z a -tzip mdiff-GUI-win-${{ env.VERSION }}.zip .\build\dist\*
-        
+
     - name: MacOs build
       if: matrix.os == 'macos-latest'
       run: |
         ./pyinstaller_start.sh
         cp VERSION build/dist
         cd build/dist
-        zip mdigg-GUI-macos-${{ env.VERSION }}.zip mdiff* -r
+        zip mdiff-GUI-macos-${{ env.VERSION }}.zip mdiff* -r
         cd ../..
-        cp -r build/dist/SqlDiff*.zip .
-        
+        cp -r build/dist/mdiff*.zip .
+
     - name: Ubuntu build
       if: matrix.os == 'ubuntu-latest'
       run: |
         ./pyinstaller_start.sh
         cp build/dist/mdiff -r  .
         zip mdiff-GUI-ubuntu-${{ env.VERSION }}.zip mdiff -r
-        
-        
+
+
     - name: Upload asset
       uses: softprops/action-gh-release@v1
       with:
