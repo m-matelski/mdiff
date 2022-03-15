@@ -11,11 +11,7 @@ from mdiff.utils import CompositeDelegationMixin, get_enum_values, sort_seq_by_o
 from mdiff.visualisation.gui_tkinter.utils import ScrolledText, WindowBuilder
 
 
-class ResultText(ScrolledText):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-
+# Defining tags, colors and mappings for coloring background in Text widgets using diff result data
 class TextDiffTag(str, Enum):
     INSERT = 'INSERT'
     DELETE = 'DELETE'
@@ -89,13 +85,23 @@ sm_choice_to_factory_name = {
 factory_name_to_sm_choice = {v: k for k, v in sm_choice_to_factory_name.items()}
 
 
+class ResultText(ScrolledText):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
 class TextComposite(tk.Text, CompositeDelegationMixin):
+    """Allows to treat group of Text widgets as one component."""
+
     def __init__(self, **kw):
         CompositeDelegationMixin.__init__(self)
         super().__init__()
 
 
 class DiffResult(tk.Frame):
+    """
+    Main diff result frame containing two Text widgets side by side for presenting diff result.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -199,16 +205,21 @@ class DiffResult(tk.Frame):
         self.grid_rowconfigure(1, weight=10000)
         self.grid_rowconfigure(0, weight=1)
 
-    def set_a(self, a):
+    def set_a(self, a: str):
+        """Set source text"""
         self.a = a
 
-    def set_b(self, b):
+    def set_b(self, b: str):
+        """Set target text"""
         self.b = b
 
     def set_diff_params(self, a: str, b: str,
                         line_sm_name: SequenceMatcherName = SequenceMatcherName.HECKEL,
                         inline_sm_name: SequenceMatcherName = SequenceMatcherName.HECKEL,
                         cutoff: float = 0.75, case_sensitive: bool = False):
+        """
+        Set diff parameters for a widget
+        """
         if not 0.0 <= cutoff <= 1.0:
             raise ValueError('cutoff must be in range: 0.0 <= cutoff <= 1.0')
         self.scale_cutoff_value.set(cutoff)
@@ -219,7 +230,7 @@ class DiffResult(tk.Frame):
         self.case_sensitive.set(value=case_sensitive)
 
     def handle_sort(self):
-
+        """Sort source and target text lines"""
         a_lines = self.a.splitlines(keepends=False)
         b_lines = self.b.splitlines(keepends=False)
         option = SortChoices(self.combo_sort_by.get())
@@ -235,6 +246,9 @@ class DiffResult(tk.Frame):
             return '\n'.join(sort_string_seq_by_other(a_lines, b_lines, case_sensitive)), self.b
 
     def generate_diff(self):
+        """
+        Takes parameters info from widgets and generates diff for intput texts.
+        """
         src_yview = self.text_source.yview()
         tgt_yview = self.text_target.yview()
         self.texts.configure(state='normal')
@@ -278,29 +292,21 @@ class DiffResult(tk.Frame):
                 self.text_source.insert('end', left_line, (left_text_tag,))
                 self.text_target.insert('end', right_line, (right_text_tag,))
 
-
         self.texts.configure(state='disabled')
         self.text_source.yview_moveto(src_yview[0])
         self.text_target.yview_moveto(tgt_yview[0])
 
     def sort_by_selection(self, event=None):
-        self.combo_sort_by.selection_clear()
-        # self.load_comparison_result()
+        """Triggered on Sort By: combo box selection"""
+        pass
 
     def line_sm_selection(self, event=None):
+        """Triggered on Line SM: combo box selection"""
         pass
 
     def in_line_sm_selection(self, event=None):
+        """Triggered on InLine SM: combo box selection"""
         pass
-
-    def text_clear(self):
-        for i in (self.text_source, self.text_target):
-            i.delete('1.0', tk.END)
-
-    def set_text_state(self, state):
-        for i in (self.text_source, self.text_target):
-            # i.put_styled_text()
-            i.configure(state=state)
 
     def on_yscrollcommand_source(self, first, last):
         if not self.has_text_scrollbars_the_same_position():
@@ -328,6 +334,14 @@ class DiffResult(tk.Frame):
 
 
 class DiffResultWindowBuilder(WindowBuilder):
+    """
+    Builds Diff Result window. It takes Tk or TopLevel window class as parent window, and content frame
+    (DiffResult) as parameters.
+
+    Reason for wrapping is that Diff Result is sub window (TopLevel window) in main GUI application, but it's
+    main window (Tk - root window) if called from CLI. It allows to reduce code duplication if the same window
+    settings are used for both Tk and TopLevel.
+    """
     def __init__(self, window: Union[tk.Tk, tk.Toplevel], content: tk.Frame):
         super().__init__(window, content)
         self.content.grid(column=0, row=0, sticky='nsew')

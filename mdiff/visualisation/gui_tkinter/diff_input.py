@@ -5,6 +5,9 @@ from mdiff.visualisation.gui_tkinter.utils import ScrolledText
 
 
 class DiffInputWindow(tk.Tk):
+    """
+    Main GUI window with 2 text inputs used to generate diff.
+    """
     def __init__(self):
         super().__init__()
 
@@ -60,16 +63,19 @@ class DiffInputWindow(tk.Tk):
         self.bind("<F8>", self.generate_diff)
 
     def generate_diff(self, *args, **kwargs):
-        # diff_result_window = tk.Toplevel(self, height=self.winfo_height()-50, width=self.winfo_width()-50)
+        # Define TopLevel window
         diff_result_window = tk.Toplevel(self)
         diff_result_window.title('mdiff - Diff Result')
         diff_result_window_w = int(self.winfo_width()*0.95)
         diff_result_window_h = height = int(self.winfo_height()*0.95)
         diff_result_window.geometry(f'{diff_result_window_w}x{diff_result_window_h}+20+20')
 
+        # Define DiffResult frame
         diff_result_content = DiffResult(diff_result_window)
         diff_result_content.set_diff_params(a=self.text_source.get("1.0", tk.END),
                                             b=self.text_target.get("1.0", tk.END))
+
+        # build and show window
         diff_result_content.generate_diff()
         window = DiffResultWindowBuilder(diff_result_window, diff_result_content)
         # diff_result_window.transient(self)

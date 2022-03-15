@@ -53,6 +53,11 @@ class ScrolledText(tk.Text):
 
 
 class WindowBuilder(ABC):
+    """
+    Wrapper class for tkinter window. A window might be instance of Tk or TopLevel class.
+    It can be defined to build single content frame into any of those two window types
+    without duplicating code, as Tk and TopLevel has the same interfaces (for example: resizing, menu bars etc.)
+    """
     def __init__(self, window: Union[tk.Tk, tk.Toplevel], content: tk.Frame):
         self.window = window
         self.content = content
