@@ -1,3 +1,8 @@
+### 0.10.0
+* Added GUI widget to present diff result
+* Added standalone GUI application.
+* Added `case-sensitive` parameter to diff.
+
 ### 0.0.5
 * Updated readme.
 * Simplified some argument names and changed docstrings.

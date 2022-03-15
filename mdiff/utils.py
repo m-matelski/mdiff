@@ -4,6 +4,7 @@ This module provides functions and structures for common package usage.
 
 import math
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
 from typing import NamedTuple, Any, Tuple, List, Sequence, Union, Protocol, Type
 
@@ -305,3 +306,9 @@ def sort_string_seq(seq: Sequence[str], case_sensitive=True) -> List[str]:
         return sorted(seq)
     else:
         return sorted(seq, key=lambda x: x.lower())
+
+
+@lru_cache
+def get_app_version() -> str:
+    version = read_file(Path('../VERSION'))
+    return version
