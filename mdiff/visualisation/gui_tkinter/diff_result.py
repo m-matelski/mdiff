@@ -131,15 +131,6 @@ class DiffResult(tk.Frame):
         self.frame_top = tk.Frame(self)
         self.frame_top.grid(column=0, row=0, sticky='', padx=3, pady=1)
 
-        # self.frame_top.config(bd=1, relief=tk.SOLID)
-        # self.frame_top.grid_columnconfigure(0, weight=1)
-        # self.frame_top.grid_columnconfigure(1, weight=1)
-        # # self.frame_top.grid_columnconfigure(2, weight=1)
-        # # self.frame_top.grid_columnconfigure(3, weight=1)
-        # # self.frame_top.grid_columnconfigure(4, weight=1)
-        # # self.frame_top.grid_columnconfigure(5, weight=1)
-        # self.frame_top.grid_rowconfigure(0, weight=1)
-
         # ---GUI--- line level sequence matcher: label + combobox
         self.frame_line_sm = tk.Frame(self.frame_top)
         self.frame_line_sm.grid(column=0, row=0, sticky='nw', padx=10)
@@ -342,6 +333,7 @@ class DiffResultWindowBuilder(WindowBuilder):
     main window (Tk - root window) if called from CLI. It allows to reduce code duplication if the same window
     settings are used for both Tk and TopLevel.
     """
+
     def __init__(self, window: Union[tk.Tk, tk.Toplevel], content: tk.Frame):
         super().__init__(window, content)
         self.content.grid(column=0, row=0, sticky='nsew')
