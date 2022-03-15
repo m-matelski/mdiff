@@ -1,19 +1,34 @@
 import tkinter as tk
+from typing import Union
 
 from mdiff.visualisation.gui_tkinter.diff_result import DiffResultWindowBuilder, DiffResult
 from mdiff.visualisation.gui_tkinter.utils import ScrolledText
+
+
+def maximize_window(window: Union[tk.Tk, tk.Toplevel]):
+    try:
+        window.state('zoomed')
+        return
+    except tk.TclError:
+        pass
+
+    try:
+        window.attributes('-zoomed', True)
+        return
+    except tk.TclError:
+        pass
 
 
 class DiffInputWindow(tk.Tk):
     """
     Main GUI window with 2 text inputs used to generate diff.
     """
+
     def __init__(self):
         super().__init__()
 
         self.title('mdiff')
-        # self.attributes('-zoomed', True)
-        self.state('zoomed')
+        maximize_window(self)
 
         # widgets
         self.frame_text = tk.Frame(self)
@@ -66,8 +81,8 @@ class DiffInputWindow(tk.Tk):
         # Define TopLevel window
         diff_result_window = tk.Toplevel(self)
         diff_result_window.title('mdiff - Diff Result')
-        diff_result_window_w = int(self.winfo_width()*0.95)
-        diff_result_window_h = height = int(self.winfo_height()*0.95)
+        diff_result_window_w = int(self.winfo_width() * 0.95)
+        diff_result_window_h = height = int(self.winfo_height() * 0.95)
         diff_result_window.geometry(f'{diff_result_window_w}x{diff_result_window_h}+20+20')
 
         # Define DiffResult frame
