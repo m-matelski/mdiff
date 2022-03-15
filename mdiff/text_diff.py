@@ -32,6 +32,8 @@ def find_best_similar_match(i1: int, i2: int, j1: int, j2: int, a: Sequence, b: 
     for i in range(i1, i2):
         sm.set_seq1(a[i])
         for j in range(j1, j2):
+            if a[i] == b[j]:
+                continue
             sm.set_seq2(b[j])
             if sm.real_quick_ratio() > best_ratio and sm.quick_ratio() > best_ratio and sm.ratio() > best_ratio:
                 best_i = i
@@ -69,9 +71,7 @@ def extract_replace_similarities(tag: str, i1: int, i2: int, j1: int, j2: int, a
         sm = SequenceMatcher()
 
     match_i, match_j, match_ratio = find_best_similar_match(i1, i2, j1, j2, a, b)
-    if match_ratio >= 1.0:
-        yield CompositeOpCode('equal', i1, i2, j1, j2)
-    elif match_ratio > cutoff:
+    if match_ratio > cutoff:
         # left
         yield from extract_replace_similarities(tag, i1, match_i, j1, match_j, a, b, cutoff, sm)
 

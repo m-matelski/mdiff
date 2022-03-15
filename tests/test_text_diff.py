@@ -16,3 +16,10 @@ class TestTextDiff(unittest.TestCase):
         sm = SequenceMatcher(a=a_lines, b=b_lines)
         hopcodes = sm.get_opcodes()
         x = 1
+
+    def test2(self):
+        a = read_file(Path('tests/resources/compares/comp5/a.txt'))
+        b = read_file(Path('tests/resources/compares/comp5/b.txt'))
+        a_lines, b_lines, opcodes = diff_lines_with_similarities(a, b)
+        sm = SequenceMatcher(a=a_lines, b=b_lines)
+        hopcodes = sm.get_opcodes()
