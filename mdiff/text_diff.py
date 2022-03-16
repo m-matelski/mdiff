@@ -141,7 +141,8 @@ def diff_lines_with_similarities(a: str, b: str, cutoff=0.75,
     if sub opcodes for similar lines should be generated.
     :param line_sm: SequenceMatcher object used to generate diff tags between input texts lines.
     :param inline_sm: SequenceMatcher object used to generate diff tags between characters in similar lines.
-    :param keepends: whether to keep newline characters when splitting input sequences.
+    :param keepends: Whether to keep newline characters when splitting input sequences.
+    :param case_sensitive: Whether to perform string case sensitive comparison when generating diff.
 
     :return: (a_lines, b_lines, opcodes) where:
         a_lines: is "a" input text split by newline characters.

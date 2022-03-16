@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 
 setuptools.setup(
     name='mdiff',
