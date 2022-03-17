@@ -1,7 +1,8 @@
 import unittest
+from pathlib import Path
 
 from mdiff.seqmatch.heckel import HeckelSequenceMatcher
-from mdiff.utils import OpCode
+from mdiff.utils import OpCode, read_file
 
 
 class TestHeckelSequenceMatcher(unittest.TestCase):
@@ -180,3 +181,10 @@ class TestHeckelSequenceMatcherWithReplaceTag(unittest.TestCase):
                             OpCode(tag='moved', i1=1, i2=1, j1=3, j2=4),
                             OpCode(tag='moved', i1=0, i2=0, j1=4, j2=5)]
         self.assertEqual(expected_opcodes, opcodes)
+
+    def test_code_file(self):
+        a = read_file(Path('tests/resources/compares/comp2/a.txt')).splitlines()
+        b = read_file(Path('tests/resources/compares/comp2/b.txt')).splitlines()
+        hd = HeckelSequenceMatcher(a, b, replace_mode=True)
+        opcodes = hd.get_opcodes()
+        x = 1

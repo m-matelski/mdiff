@@ -6,7 +6,7 @@ import math
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import NamedTuple, Any, Tuple, List, Sequence, Union, Protocol, Type
+from typing import NamedTuple, Any, Tuple, List, Sequence, Union, Protocol, Type, Iterable
 
 
 class OpCode:
@@ -312,3 +312,10 @@ def sort_string_seq(seq: Sequence[str], case_sensitive=True) -> List[str]:
 def get_app_version() -> str:
     version = read_file(Path('../VERSION'))
     return version
+
+
+def get_idx_or_default(_list: list, idx: int, default=None):
+    try:
+        return _list[idx]
+    except IndexError:
+        return default
