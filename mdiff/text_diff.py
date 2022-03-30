@@ -165,6 +165,9 @@ def diff_lines_with_similarities(a: str, b: str, cutoff=0.75,
     >>> opcodes[2].children_opcodes
     [OpCode('equal', 0, 2, 0, 2), OpCode('replace', 2, 3, 2, 3)]
     """
+    if not 0.0 <= cutoff <= 1.0:
+        raise ValueError('Cutoff must have value in range 0.0 <= cutoff <= 1.0')
+
     if line_sm is None:
         line_sm = HeckelSequenceMatcher()
     if inline_sm is None:
@@ -180,5 +183,11 @@ def diff_lines_with_similarities(a: str, b: str, cutoff=0.75,
         sm_b_lines = [i.lower() for i in b_lines]
     line_sm.set_seqs(sm_a_lines, sm_b_lines)
     line_opcodes = line_sm.get_opcodes()
-    line_opcodes_with_similarities = extract_similarities(line_opcodes, sm_a_lines, sm_b_lines, cutoff, inline_sm)
-    return a_lines, b_lines, list(line_opcodes_with_similarities)
+
+    if cutoff == 1.0:
+        opcodes = line_opcodes
+    else:
+        line_opcodes_with_similarities = extract_similarities(line_opcodes, sm_a_lines, sm_b_lines, cutoff, inline_sm)
+        opcodes = list(line_opcodes_with_similarities)
+
+    return a_lines, b_lines, opcodes
