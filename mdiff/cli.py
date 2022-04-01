@@ -33,7 +33,7 @@ def cli_diff(source_file: Path = typer.Argument(..., help="Source file path to c
                  SequenceMatcherName.HECKEL,
                  help='Choose sequence matching method to detect in-line differences between similar lines.'),
              cutoff: float = typer.Option(
-                 0.75, min=0.0, max=1.0,
+                 1.0, min=0.0, max=1.0,
                  help='Line similarity ratio cutoff. If value exceeded then finds in-line differences in similar lines.'
              ),
              gui: bool = typer.Option(False, help='Open GUI window with diff result.'),

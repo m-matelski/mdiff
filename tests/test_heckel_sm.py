@@ -1,7 +1,9 @@
 import unittest
+from pathlib import Path
 
+from mdiff import DisplacementSequenceMatcher
 from mdiff.seqmatch.heckel import HeckelSequenceMatcher
-from mdiff.utils import OpCode
+from mdiff.utils import OpCode, read_file
 
 
 class TestHeckelSequenceMatcher(unittest.TestCase):
@@ -179,4 +181,26 @@ class TestHeckelSequenceMatcherWithReplaceTag(unittest.TestCase):
                             OpCode(tag='moved', i1=2, i2=2, j1=2, j2=3),
                             OpCode(tag='moved', i1=1, i2=1, j1=3, j2=4),
                             OpCode(tag='moved', i1=0, i2=0, j1=4, j2=5)]
+        self.assertEqual(expected_opcodes, opcodes)
+
+    def test_code_file(self):
+        a = read_file(Path('tests/resources/compares/comp2/a.txt')).splitlines()
+        b = read_file(Path('tests/resources/compares/comp2/b.txt')).splitlines()
+        hd = HeckelSequenceMatcher(a, b, replace_mode=True)
+        opcodes = hd.get_opcodes()
+        x = 1
+
+
+class TestDisplacementSequenceMatcher(unittest.TestCase):
+
+    def test1(self):
+        a = [1, 2, 3, 4, 2, 5, 1]
+        b = [2, 5, 4, 6, 2, 2, 4]
+
+        sm = DisplacementSequenceMatcher(a, b, replace_mode=True)
+        opcodes = sm.get_opcodes()
+        expected_opcodes = [OpCode('delete', 0, 1, 0, 0), OpCode('equal', 1, 2, 0, 1), OpCode('delete', 2, 3, 1, 1),
+                            OpCode('moved', 5, 5, 1, 2), OpCode('equal', 3, 4, 2, 3), OpCode('insert', 4, 4, 3, 4),
+                            OpCode('equal', 4, 5, 4, 5), OpCode('insert', 5, 5, 5, 7), OpCode('move', 5, 6, 1, 1),
+                            OpCode('delete', 6, 7, 7, 7)]
         self.assertEqual(expected_opcodes, opcodes)

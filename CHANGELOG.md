@@ -1,3 +1,6 @@
+### 0.1.4
+* Improved Heckel's algorithm opcode extraction performance.
+
 ### 0.1.3
 * Updated README.md
 

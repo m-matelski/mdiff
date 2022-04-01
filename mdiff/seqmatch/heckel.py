@@ -1,9 +1,9 @@
+from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, List, Union, Dict, Sequence, NamedTuple
+from typing import Any, List, Union, Dict, Sequence, NamedTuple, Optional
 
-from mdiff.block_extractor import NonIntegersBlockExtractor, ConsecutiveVectorBlockExtractor, \
-    OpCodeDeleteThenInsertBlockExtractor
-from mdiff.utils import OpCode, longest_increasing_subsequence
+from mdiff.block_extractor import OpCodeDeleteThenInsertBlockExtractor
+from mdiff.utils import OpCode, longest_increasing_subsequence, get_idx_or_default, OpCodeExtractable
 
 
 @dataclass
@@ -61,50 +61,15 @@ def _map_replace_opcodes(opcodes: Sequence[OpCode]):
     return replace_result
 
 
-class HeckelSequenceMatcher:
-    """
-    HeckelSequenceMatcher is a class for comparing pairs of sequences of any type, as long as sequences
-    are comparable and hashable. Unlike builtin difflib.SequenceMatcher, it detects and marks elements
-    displacement between sequences. This class provides get_opcodes() method which returns Sequence of opcodes
-    with differences between sequences in a similar manner as difflib.SequenceMatcher.get_opcodes() does, but
-    with additional "move" and "moved" tags for displaced elements.
-
-    Unlike difflib.SequenceMatcher - this class doesn't provide any additional functionality for generating
-    human-readable sequence comparisons.
-
-    Parameters:
-        a:
-            source(old) sequence.
-        b:
-            target(new) sequence.
-        replace_mode:
-            if True: it merges consecutive pairs of "insert" and "delete" blocks into "replace" operation.
-            Remains "insert" and "delete" blocks otherwise.
-
-    HeckelSequenceMatcher uses implementation of Paul Heckel's algorithm described in
-    "A Technique for Isolating Differences Between Files" paper, which can be found here:
-    http://documents.scribd.com/docs/10ro9oowpo1h81pgh1as.pdf
-    """
-
-    def __init__(self, a: Sequence[Any] = '', b: Sequence[Any] = '', replace_mode=True):
+class HeckelAlgorithm:
+    def __init__(self, a: Sequence[Any] = '', b: Sequence[Any] = ''):
         self.a = a
         self.b = b
-        self.replace_mode = replace_mode
         self.st: Dict[Any, HeckelSymbolTableEntryType] = {}
         self.na: List[HeckelSymbolTableEntryType] = []
         self.oa: List[HeckelSymbolTableEntryType] = []
 
-    def set_seq1(self, a):
-        self.a = a
-
-    def set_seq2(self, b):
-        self.b = b
-
-    def set_seqs(self, a, b):
-        self.set_seq1(a)
-        self.set_seq2(b)
-
-    def _alg(self):
+    def run(self):
         """
         Implementation of Paul Heckel's algorithm described in "A Technique for Isolating Differences Between Files".
         """
@@ -159,148 +124,156 @@ class HeckelSequenceMatcher:
         self.na = na
         self.oa = oa
 
-    def _generate_move_and_equal_opcodes(self) -> Sequence[OpCode]:
-        """
-        Generates sequence of OpCode tuples where tags are in: "equal", "move", "moved".
-        """
-        # New order of sequence elements that exists in both sequences is stored in NA table after algorithm run.
-        # Integer type entries in NA indicates that element of sequence might be either equal or moved.
-        # Extract from NA tables only move/equal entries.
-        # Index is added because NA integer entries will be converted to consecutive entries blocks.
-        # Block will have form of tuple = (block_start_index, block_start_value, block_length) corresponding to NA table
-        # NA table can consist of SymbolTableEntry type rows which breaks the block.
-        # Adding enumerate index allow to detect block break caused by SymbolTableEntry type record.
-        na_indexed_moves = [(idx, i) for idx, i in enumerate(self.na) if isinstance(i, int)]
 
-        # Longest increasing sequence finds "equal" entries.
-        # Indexed NA in form of tuples are used in order to use index to build proper MoveBlocks later.
-        lis = longest_increasing_subsequence(na_indexed_moves, key=lambda x: x[1])
-        lis_idx, lis_v = zip(*lis) if lis else ([], [])
+class HeckelOpCodeExtractor(OpCodeExtractable):
+    """
+    This class extracts OpCodes based on data calculated by Heckel's algorithm class.
+    """
 
-        # Finding consecutive vector blocks and mapping them to NA indexes and starting values.
-        cons_all_blocks = list(ConsecutiveVectorBlockExtractor(na_indexed_moves).extract_blocks())
-        all_blocks = [OpBlock(i=na_indexed_moves[i][0], n=na_indexed_moves[i][1], w=w) for i, w in cons_all_blocks]
+    def __init__(self, alg: HeckelAlgorithm, replace_mode: bool = True):
+        self.alg = alg
+        self.replace_mode = replace_mode
+        self.lis: Optional[deque] = None
 
-        # Finding consecutive vector blocks in LIS and mapping them to NA indexes and starting values.
-        cons_eq_blocks = list(ConsecutiveVectorBlockExtractor(lis_v).extract_blocks())
-        eq_blocks = [OpBlock(i=lis_v[i][0], n=lis_v[i][1], w=w) for i, w in cons_eq_blocks]
+    def _na(self, i):
+        return get_idx_or_default(self.alg.na, i, None)
 
-        # The difference of all NA blocks and "equal" blocks found by LIS, gives list of optimal move operation blocks.
-        move_blocks = set(all_blocks) - set(eq_blocks)
+    def _oa(self, i):
+        return get_idx_or_default(self.alg.oa, i, None)
 
-        # Yield OpCodes
-        for b in eq_blocks:
-            yield OpCode('equal', b.i, b.i + b.w, b.n, b.n + b.w)
+    def __is_move(self, i):
+        if self.lis:
+            return i != self.lis[0][1][0]
+        return True
 
-        for b in move_blocks:
-            yield OpCode('move', b.i, b.i + b.w, b.n, b.n)
-            yield OpCode('moved', b.i, b.i, b.n, b.n + b.w)
-
-    def _generate_insert_opcodes(self):
-        """
-        Generates sequence of OpCode tuples with tag "insert".
-        """
-        block_extractor = NonIntegersBlockExtractor(self.oa)
-        insert_blocks = [OpBlock(i, self.oa[i], w) for i, w in block_extractor.extract_blocks()]
-        for b in insert_blocks:
-            yield OpCode('insert', b.n.olno, b.n.olno, b.i, b.i + b.w)
-
-    def _generate_delete_opcodes(self):
-        """
-        Generates sequence of OpCode tuples with tag "delete".
-        """
-        block_extractor = NonIntegersBlockExtractor(self.na)
-        delete_blocks = [OpBlock(i, self.na[i], w) for i, w in block_extractor.extract_blocks()]
-        for b in delete_blocks:
-            yield OpCode('delete', b.i, b.i + b.w, b.n.olno, b.n.olno)
+    def __is_moved(self, i):
+        if self.lis:
+            return i != self.lis[0][1][1]
+        return True
 
     def get_opcodes(self) -> List[OpCode]:
-        """
-        Returns list of OpCode objects describing how to turn sequence "a" into "b".
-        OpCode consists of attributes: tag, i1, i2, j1, j2. OpCode can be unpacked as tuple
-        (to be consistent with difflib.SequenceMatcher.get_opcodes() result)
+        """Extracts opcodes from Heckel's algorithm data."""
+        opcodes = []
+        i = j = 0  # na and oa indexes
 
-        Usually the first tuple has i1 == j1 == 0, and remaining tuples have i1 equal to the i2
-        from the preceding tuple, and, likewise, j1 equal to the previous j2. However this rule is broken when
-        "move" and "moved" tags appears in OpCodes list, due to sequence elements displacement detection.
+        na_indexed_moves = [(idx, i) for idx, i in enumerate(self.alg.na) if isinstance(i, int)]
+        # Longest increasing sequence finds "equal" entries.
+        # Indexes not present in LIS result determine least move blocks needed to convert a to b
+        self.lis = deque(longest_increasing_subsequence(na_indexed_moves, key=lambda x: x[1]))
 
-        The tags are strings, with these meanings:
-            'replace':  a[i1:i2] should be replaced by b[j1:j2]
-            'delete':   a[i1:i2] should be deleted. Note that j1==j2 in this case.
-            'insert':   b[j1:j2] should be inserted at a[i1:i1]. Note that i1==i2 in this case.
-            'equal':    a[i1:i2] == b[j1:j2]
-            'move':     a[i1:i2] should be moved to b[j1:j2] position. Note that j1==j2 in this case.
-            'moved':    is opposite tag for 'move'. It's not an operation necessary for turning sequence "a" into "b".
-                        It indicates that b[j1:j2] is moved from i1 position
-                        (or b[j1:j2] should be moved back to a[i1:i2]). Note that i1==j2 in this case.
-                        It can be used for sequence elements movement visualisation.
-        """
+        while i < len(self.alg.na) or j < len(self.alg.oa):
+            prev_i = i
+            prev_j = j
 
-        self._alg()
-        # Prepare opcodes
-        insert_opcodes = list(self._generate_insert_opcodes())
-        delete_opcodes = list(self._generate_delete_opcodes())
-        move_opcodes = []
-        moved_opcodes = []
-        equal_opcodes = []
-        map_dict = {
-            'move': move_opcodes,
-            'moved': moved_opcodes,
-            'equal': equal_opcodes
-        }
-        for opcode in self._generate_move_and_equal_opcodes():
-            map_dict[opcode.tag].append(opcode)
+            # Find delete block
+            while isinstance(self._na(i), HeckelSymbolTableEntry):
+                i += 1
+            delete_opcode = OpCode('delete', prev_i, i, j, j) if i > prev_i else None
 
-        # sort opcodes (insert, delete and equal opcodes are already sorted)
-        moved_opcodes.sort(key=lambda x: x.j1)
-        move_opcodes.sort(key=lambda x: x.i1)
+            # Find insert block
+            while isinstance(self._oa(j), HeckelSymbolTableEntry):
+                j += 1
+            insert_opcode = OpCode('insert', i, i, prev_j, j) if j > prev_j else None
 
-        # Fetch opcodes in correct order
-        result = []
-        ipos = 0
-        jpos = 0
-        while any([insert_opcodes, delete_opcodes, move_opcodes, moved_opcodes, equal_opcodes]):
-            if len(delete_opcodes) > 0 and delete_opcodes[0].i1 == ipos:
-                opcode = delete_opcodes.pop(0)
-                # j1 and j2 attributes are meaningless for delete operation. However replacing them with jpos
-                # keep j-indexes in sync with j-indexes in other returned tags, like in builtin difflib library.
-                result.append(OpCode(opcode.tag, opcode.i1, opcode.i2, jpos, jpos))
-                ipos = opcode.i2
+            # Based on insert and delete block, decide if replace block needs to be generated
+            if delete_opcode and insert_opcode and self.replace_mode:
+                rep_opcode = OpCode('replace', delete_opcode.i1, delete_opcode.i2, insert_opcode.j1, insert_opcode.j2)
+                opcodes.append(rep_opcode)
+                continue
+            elif delete_opcode and insert_opcode and not self.replace_mode:
+                opcodes.append(delete_opcode)
+                opcodes.append(insert_opcode)
+                continue
+            elif delete_opcode:
+                opcodes.append(delete_opcode)
+                continue
+            elif insert_opcode:
+                opcodes.append(insert_opcode)
                 continue
 
-            if len(move_opcodes) > 0 and move_opcodes[0].i1 == ipos:
-                opcode = move_opcodes.pop(0)
-                result.append(opcode)
-                ipos = opcode.i2
+            # Detect move block
+            prev_move_val = None
+            move_j_index = self._na(i)
+            while (i < len(self.alg.na) and self.__is_move(i)) and (
+                    not prev_move_val or self._na(i) == prev_move_val + 1):
+                prev_move_val = self._na(i)
+                i += 1
+            if i > prev_i:
+                opcodes.append(OpCode('move', prev_i, i, move_j_index, move_j_index))
                 continue
 
-            if len(equal_opcodes) > 0 and equal_opcodes[0].i1 == ipos and equal_opcodes[0].j1 == jpos:
-                opcode = equal_opcodes.pop(0)
-                result.append(opcode)
-                ipos = opcode.i2
-                jpos = opcode.j2
+            # Detect moved block
+            prev_moved_val = None
+            moved_i_index = self._oa(j)
+            while (j < len(self.alg.oa) and self.__is_moved(j)) and (
+                    not prev_moved_val or self._oa(j) == prev_moved_val + 1):
+                prev_moved_val = self._oa(j)
+                j += 1
+            if j > prev_j:
+                opcodes.append(OpCode('moved', moved_i_index, moved_i_index, prev_j, j))
                 continue
 
-            if len(insert_opcodes) > 0 and insert_opcodes[0].j1 == jpos:
-                opcode = insert_opcodes.pop(0)
-                # i1 and i2 attributes are meaningless for insert operation. However replacing them with ipos
-                # keep i-indexes in sync with i-indexes in other returned tags, like in builtin difflib library.
-                result.append(OpCode(opcode.tag, ipos, ipos, opcode.j1, opcode.j2))
-                jpos = opcode.j2
+            # Detect equal block
+            while self.lis and (not self.__is_move(i) and not self.__is_moved(j)):
+                i += 1
+                j += 1
+                self.lis.popleft()
+            if i > prev_i:
+                opcodes.append(OpCode('equal', prev_i, i, prev_j, j))
                 continue
 
-            if len(moved_opcodes) > 0 and moved_opcodes[0].j1 == jpos:
-                opcode = moved_opcodes.pop(0)
-                result.append(opcode)
-                jpos = opcode.j2
-                continue
+        return opcodes
 
-            raise HeckelSequenceMatcherException('Invalid indexes in generated OpCodes. Something went wrong.')
 
-        if self.replace_mode:
-            result = _map_replace_opcodes(result)
+class HeckelSequenceMatcher:
+    """
+    HeckelSequenceMatcher is a class for comparing pairs of sequences of any type, as long as sequences
+    are comparable and hashable. Unlike builtin difflib.SequenceMatcher, it detects and marks elements
+    displacement between sequences. This class provides get_opcodes() method which returns Sequence of opcodes
+    with differences between sequences in a similar manner as difflib.SequenceMatcher.get_opcodes() does, but
+    with additional "move" and "moved" tags for displaced elements.
 
-        return result
+    Unlike difflib.SequenceMatcher - this class doesn't provide any additional functionality for generating
+    human-readable sequence comparisons.
+
+    Parameters:
+        a:
+            source(old) sequence.
+        b:
+            target(new) sequence.
+        replace_mode:
+            if True: it merges consecutive pairs of "insert" and "delete" blocks into "replace" operation.
+            Remains "insert" and "delete" blocks otherwise.
+
+    HeckelSequenceMatcher uses implementation of Paul Heckel's algorithm described in
+    "A Technique for Isolating Differences Between Files" paper, which can be found here:
+    http://documents.scribd.com/docs/10ro9oowpo1h81pgh1as.pdf
+    """
+
+    def __init__(self, a: Sequence[Any] = '', b: Sequence[Any] = '', replace_mode=True):
+        self.a = a
+        self.b = b
+        self.replace_mode = replace_mode
+        self.alg: HeckelAlgorithm = HeckelAlgorithm(self.a, self.b)
+        # no DI for opcode extractor object, because it's the only implementation right now.
+        self.opcode_extractor = HeckelOpCodeExtractor(self.alg, self.replace_mode)
+
+    def set_seq1(self, a):
+        self.a = a
+        self.alg.a = a
+
+    def set_seq2(self, b):
+        self.b = b
+        self.alg.b = b
+
+    def set_seqs(self, a, b):
+        self.set_seq1(a)
+        self.set_seq2(b)
+
+    def get_opcodes(self) -> List[OpCode]:
+        self.alg.run()
+        opcodes = self.opcode_extractor.get_opcodes()
+        return opcodes
 
 
 # ------------------------------------------------------------------------------------
@@ -321,6 +294,56 @@ class DisplacementMatcherEntry:
     b_indexes: List[int] = field(default_factory=lambda: [])
     a_curr_idx: int = 0
     b_curr_idx: int = 0
+
+
+class DisplacementAlgorithm(HeckelAlgorithm):
+    def __init__(self, a: Sequence[Any] = '', b: Sequence[Any] = ''):
+        super().__init__(a, b)
+        self.st: Dict[Any, DisplacementMatcherEntry] = {}
+        self.na = []
+        self.oa = []
+
+    def setup(self):
+        self.st = {}
+        self.na = []
+        self.oa = []
+
+    def add_entries(self):
+        """
+        Fills algorithm's symbol table.
+        """
+        for idx, i in enumerate(self.a):
+            e = self.st.setdefault(i, DisplacementMatcherEntry(key_val=i))
+            e.a_indexes.append(idx)
+
+        for idx, i in enumerate(self.b):
+            e = self.st.setdefault(i, DisplacementMatcherEntry(key_val=i))
+            e.b_indexes.append(idx)
+
+    def run(self):
+        """
+        Overridden algorithm.
+        """
+        self.setup()
+        self.add_entries()
+
+        for idx, i in enumerate(self.a):
+            try:
+                e = self.st[i].b_indexes[self.st[i].b_curr_idx]
+                self.st[i].b_curr_idx += 1
+            except IndexError:
+                # table entry values don't have much meanings
+                e = HeckelSymbolTableEntry(i, 0, 0, idx)
+            self.na.append(e)
+
+        for idx, i in enumerate(self.b):
+            try:
+                e = self.st[i].a_indexes[self.st[i].a_curr_idx]
+                self.st[i].a_curr_idx += 1
+            except IndexError:
+                # table entry values don't have much meanings
+                e = HeckelSymbolTableEntry(i, 0, 0, idx)
+            self.oa.append(e)
 
 
 class DisplacementSequenceMatcher(HeckelSequenceMatcher):
@@ -346,48 +369,5 @@ class DisplacementSequenceMatcher(HeckelSequenceMatcher):
         Overridden init from HeckelSequenceMatcher class.
         """
         super().__init__(a, b, replace_mode)
-        self.st: Dict[Any, DisplacementMatcherEntry] = {}
-        self.na = []
-        self.oa = []
-
-    def setup(self):
-        self.st = {}
-        self.na = []
-        self.oa = []
-
-    def add_entries(self):
-        """
-        Fills algorithm's symbol table.
-        """
-        for idx, i in enumerate(self.a):
-            e = self.st.setdefault(i, DisplacementMatcherEntry(key_val=i))
-            e.a_indexes.append(idx)
-
-        for idx, i in enumerate(self.b):
-            e = self.st.setdefault(i, DisplacementMatcherEntry(key_val=i))
-            e.b_indexes.append(idx)
-
-    def _alg(self):
-        """
-        Overridden algorithm.
-        """
-        self.setup()
-        self.add_entries()
-
-        for idx, i in enumerate(self.a):
-            try:
-                e = self.st[i].b_indexes[self.st[i].b_curr_idx]
-                self.st[i].b_curr_idx += 1
-            except IndexError:
-                # table entry values don't have much meanings
-                e = HeckelSymbolTableEntry(i, 0, 0, idx)
-            self.na.append(e)
-
-        for idx, i in enumerate(self.b):
-            try:
-                e = self.st[i].a_indexes[self.st[i].a_curr_idx]
-                self.st[i].a_curr_idx += 1
-            except IndexError:
-                # table entry values don't have much meanings
-                e = HeckelSymbolTableEntry(i, 0, 0, idx)
-            self.oa.append(e)
+        self.alg = DisplacementAlgorithm(a, b)
+        self.opcode_extractor = HeckelOpCodeExtractor(self.alg, self.replace_mode)

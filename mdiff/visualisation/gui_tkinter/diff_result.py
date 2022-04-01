@@ -207,7 +207,7 @@ class DiffResult(tk.Frame):
     def set_diff_params(self, a: str, b: str,
                         line_sm_name: SequenceMatcherName = SequenceMatcherName.HECKEL,
                         inline_sm_name: SequenceMatcherName = SequenceMatcherName.HECKEL,
-                        cutoff: float = 0.75, case_sensitive: bool = False):
+                        cutoff: float = 1.0, case_sensitive: bool = True):
         """
         Set diff parameters for a widget
         """

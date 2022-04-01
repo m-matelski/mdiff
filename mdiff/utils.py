@@ -1,12 +1,13 @@
 """
 This module provides functions and structures for common package usage.
 """
-
+import logging
 import math
+from abc import ABC, abstractmethod
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import NamedTuple, Any, Tuple, List, Sequence, Union, Protocol, Type
+from typing import NamedTuple, Any, Tuple, List, Sequence, Union, Protocol, Type, Iterable
 
 
 class OpCode:
@@ -73,6 +74,12 @@ class CompositeOpCode(OpCode):
 
     def __repr__(self):
         return f"{super().__repr__()}{'*' if self.children_opcodes else ''}"
+
+
+class OpCodeExtractable(ABC):
+    @abstractmethod
+    def get_opcodes(self) -> List[OpCodesType]:
+        pass
 
 
 def longest_increasing_subsequence(x: Sequence[Any], key=lambda x: x, a_lt_b=lambda a, b: a < b) \
@@ -312,3 +319,20 @@ def sort_string_seq(seq: Sequence[str], case_sensitive=True) -> List[str]:
 def get_app_version() -> str:
     version = read_file(Path('../VERSION'))
     return version
+
+
+def get_idx_or_default(_list: list, idx: int, default=None):
+    try:
+        return _list[idx]
+    except IndexError:
+        return default
+
+
+def setup_logger():
+    logging.basicConfig(
+        format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S')
+
+
+setup_logger()
