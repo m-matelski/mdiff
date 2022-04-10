@@ -79,6 +79,24 @@ class CompositeOpCode(OpCode):
 class OpCodeExtractable(ABC):
     @abstractmethod
     def get_opcodes(self) -> List[OpCodesType]:
+        """
+        Returns list of OpCode objects describing how to turn sequence "a" into "b".
+        OpCode consists of attributes: tag, i1, i2, j1, j2. OpCode can be unpacked as tuple
+        (to be consistent with difflib.SequenceMatcher.get_opcodes() result)
+        Usually the first tuple has i1 == j1 == 0, and remaining tuples have i1 equal to the i2
+        from the preceding tuple, and, likewise, j1 equal to the previous j2. However this rule is broken when
+        "move" and "moved" tags appears in OpCodes list, due to sequence elements displacement detection.
+        The tags are strings, with these meanings:
+            'replace':  a[i1:i2] should be replaced by b[j1:j2]
+            'delete':   a[i1:i2] should be deleted. Note that j1==j2 in this case.
+            'insert':   b[j1:j2] should be inserted at a[i1:i1]. Note that i1==i2 in this case.
+            'equal':    a[i1:i2] == b[j1:j2]
+            'move':     a[i1:i2] should be moved to b[j1:j2] position. Note that j1==j2 in this case.
+            'moved':    is opposite tag for 'move'. It's not an operation necessary for turning sequence "a" into "b".
+                        It indicates that b[j1:j2] is moved from i1 position
+                        (or b[j1:j2] should be moved back to a[i1:i2]). Note that i1==j2 in this case.
+                        It can be used for sequence elements movement visualisation.
+        """
         pass
 
 

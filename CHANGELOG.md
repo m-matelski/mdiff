@@ -1,3 +1,6 @@
+### 0.1.5
+* Fixed issue [#12](https://github.com/m-matelski/mdiff/issues/12).
+
 ### 0.1.4
 * Improved Heckel's algorithm opcode extraction performance.
 
